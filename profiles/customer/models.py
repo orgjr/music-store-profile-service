@@ -1,5 +1,5 @@
+from profiles.base.models import Profile
 from profiles.customer.manager import CustomerManager
-from profiles.models import Profile
 
 
 class Customer(Profile):
