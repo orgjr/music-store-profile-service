@@ -1,18 +1,19 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from profiles.admin.models import Admin
 from profiles.customer.models import Customer
+from profiles.staff.models import Staff
 
 
 # Create your views here.
 @api_view(["POST"])
 def customer(request):
     a = Customer.objects.create(
-        first_name="Fabrício",
-        last_name="Imavov",
-        doc="10258192852",
-        address="rua seila 234",
+        first_name="Marcelo",
+        last_name="Felisberto",
+        doc="10212345452",
+        address="rua seila",
+        address_number="234",
         neighborhood="seila",
         city="seila",
         state="SP",
@@ -22,12 +23,13 @@ def customer(request):
 
 
 @api_view(["POST"])
-def admin(request):
-    a = Admin.objects.create(
-        first_name="Gerúsia",
-        last_name="Ivanovich",
-        doc="10251171827",
-        address="rua seila 234",
+def staff(request):
+    a = Staff.objects.create(
+        first_name="Claudia",
+        last_name="Mourão",
+        doc="10125511827",
+        address="rua seila",
+        address_number="234",
         neighborhood="seila",
         city="seila",
         state="SP",
