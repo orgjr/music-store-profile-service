@@ -1,14 +1,14 @@
 from django.db import models
 
-from profiles.admin.manager import AdminManager
-from profiles.models import Profile
+from profiles.base.models import Profile
+from profiles.staff.manager import StaffManager
 
 
-class Admin(Profile):
+class Staff(Profile):
     rn = models.CharField(max_length=7)
     role = models.CharField(max_length=50)
 
-    objects = AdminManager()
+    objects = StaffManager()
 
     def __str__(self):
         return self.get_full_name()

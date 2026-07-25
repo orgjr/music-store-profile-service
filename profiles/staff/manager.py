@@ -3,7 +3,7 @@ from django.db.models.manager import Manager
 from profiles.services.profile_validation import ProfileValidationService
 
 
-class AdminManager(Manager):
+class StaffManager(Manager):
     def create(
         self,
         first_name,
