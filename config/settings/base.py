@@ -10,9 +10,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "core",
+    "docs",
     "profiles",
     "rest_framework",
     "drf_spectacular",
+    "drf_spectacular_sidecar",
 ]
 
 MIDDLEWARE = [
@@ -67,9 +69,10 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Customer API",
-    "DESCRIPTION": "Customer management API",
-    "VERSION": "0.1.0",
+    "TITLE": "Music Store Profile Service",
+    "DESCRIPTION": "Profile management microservice for the Music Store project — "
+    "responsible for creating and querying customers and staff members.",
+    "VERSION": "0.9.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
@@ -77,11 +80,15 @@ SPECTACULAR_SETTINGS = {
     "TAGS": [
         {
             "name": "core",
-            "description": "Core management — creation, retrieval, partial update, update and delete.",
+            "description": "Core endpoints — service information and health check.",
         },
         {
-            "name": "profiles",
-            "description": "Profiles management — creation, retrieval, partial update, update and delete.",
+            "name": "customers",
+            "description": "Customer profile endpoints — list, create, retrieve, update and delete customers.",
+        },
+        {
+            "name": "staff",
+            "description": "Staff profile endpoints — list, create, retrieve, update and delete staff members.",
         },
     ],
     "CONTACT": {

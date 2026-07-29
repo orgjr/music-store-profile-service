@@ -40,6 +40,8 @@ Customer(Profile)          Staff(Profile)
                            └── role  (string, 50)
 ```
 
+Both concrete models use **custom managers** (`CustomerManager`, `StaffManager`) that apply input sanitization via `ProfileValidationService` (strip, lowercase, alphanumeric check) before persisting.
+
 ---
 
 ## Environment-specific Settings
@@ -84,16 +86,122 @@ The API will be available at `http://localhost:8000`.
 
 ---
 
+## Running Tests
+
+```bash
+python manage.py test tests --settings=config.settings.test --verbosity=2
+```
+
+The test suite has **175 tests** covering unit (models, managers, validation service), functional (serializers), and endpoint (full HTTP requests) layers.
+
+---
+
+## Project Structure
+
+```
+config/                         # Django project configuration
+├── settings/
+│   ├── base.py                 # Shared settings (apps, REST, spectacular)
+│   ├── dev.py                  # SQLite, debug
+│   ├── prod.py                 # PostgreSQL, production hardening
+│   └── test.py                 # In-memory SQLite
+
+core/                           # Core app — service info + health
+├── views.py                    # index/health endpoints
+└── urls.py
+
+profiles/                       # Profiles app
+├── base/
+│   └── models.py               # Profile (abstract base)
+├── customer/
+│   ├── models.py               # Customer(Profile)
+│   ├── manager.py              # CustomerManager (validation on create)
+│   └── serializers.py          # CustomerSerializer
+├── staff/
+│   ├── models.py               # Staff(Profile)
+│   ├── manager.py              # StaffManager (rn/role + profile validation)
+│   └── serializers.py          # StaffSerializer
+├── services/
+│   └── profile_validation.py   # ProfileValidationService + validate_alphanumeric
+├── views.py                    # CustomerViewSet + StaffViewSet (ModelViewSets)
+└── urls.py                     # DefaultRouter registrations
+
+docs/                           # OpenAPI schema annotations (drf-spectacular)
+└── api/
+    ├── index.py                # Service info endpoint schema
+    ├── health.py               # Health check endpoint schema
+    └── profiles/
+        ├── customer.py         # Customer CRUD schemas
+        └── staff.py            # Staff CRUD schemas
+
+tests/                          # Centralized test suite
+├── core/
+│   ├── test_index.py           # 9 tests
+│   └── test_health.py          # 8 tests
+└── profiles/
+    ├── base/
+    │   ├── test_models.py      # 4 tests
+    │   └── test_validation.py  # 22 tests
+    ├── customer/
+    │   ├── test_models.py      # 19 tests
+    │   ├── test_serializers.py # 33 tests
+    │   └── test_endpoints.py   # 27 tests
+    └── staff/
+        ├── test_models.py      # 18 tests
+        ├── test_serializers.py # 23 tests
+        └── test_endpoints.py   # 22 tests
+```
+
+---
+
+## Endpoints
+
+### Core
+
+| Method | Route             | Description                       |
+| ------ | ----------------- | --------------------------------- |
+| GET    | `/api/v1/`        | Service metadata (name, version…) |
+| GET    | `/api/v1/health/` | Health check (status, uptime)     |
+
+### Customer CRUD
+
+| Method | Route                               | Description      |
+| ------ | ----------------------------------- | ---------------- |
+| GET    | `/api/v1/profiles/customer/`        | List (paginated) |
+| POST   | `/api/v1/profiles/customer/`        | Create           |
+| GET    | `/api/v1/profiles/customer/{uuid}/` | Retrieve         |
+| PUT    | `/api/v1/profiles/customer/{uuid}/` | Full update      |
+| PATCH  | `/api/v1/profiles/customer/{uuid}/` | Partial update   |
+| DELETE | `/api/v1/profiles/customer/{uuid}/` | Delete           |
+
+### Staff CRUD
+
+| Method | Route                            | Description      |
+| ------ | -------------------------------- | ---------------- |
+| GET    | `/api/v1/profiles/staff/`        | List (paginated) |
+| POST   | `/api/v1/profiles/staff/`        | Create           |
+| GET    | `/api/v1/profiles/staff/{uuid}/` | Retrieve         |
+| PUT    | `/api/v1/profiles/staff/{uuid}/` | Full update      |
+| PATCH  | `/api/v1/profiles/staff/{uuid}/` | Partial update   |
+| DELETE | `/api/v1/profiles/staff/{uuid}/` | Delete           |
+
+### OpenAPI Documentation
+
+| Tool    | URL               |
+| ------- | ----------------- |
+| Schema  | `/api/v1/schema/` |
+| Swagger | `/api/v1/docs/`   |
+| Redoc   | `/api/v1/redoc/`  |
+
+---
+
 ## Deploy with Docker / Docker Compose
 
 ### Build and run
 
 ```bash
-# Build the image
-docker compose build
-
-# Start the service
-docker compose up -d
+cd ./music-store-profile-service
+docker compose -f compose.yaml up --build
 ```
 
 The container exposes port `8000` and mounts the current directory as a volume at `/app`, enabling hot-reload during development.
@@ -135,25 +243,10 @@ volumes:
 
 ---
 
-## Endpoints
-
-| Method | Route                 | Description           |
-| ------ | --------------------- | --------------------- |
-| POST   | `/profiles/customer/` | Create a customer     |
-| POST   | `/profiles/staff/`    | Create a staff member |
-
-OpenAPI documentation available at:
-
-- Swagger UI: `http://localhost:8000/api/schema/swagger-ui/`
-- Redoc: `http://localhost:8000/api/schema/redoc/`
-
----
-
 ## Planned Improvements
 
-- [ ] Full CRUD endpoints with serializers and validation
-- [ ] Detailed OpenAPI documentation with examples (`@extend_schema`)
-- [ ] Automated tests (unit, integration)
 - [ ] Authentication and authorization
 - [ ] CI/CD with GitHub Actions
-- [ ] Health check and observability
+- [ ] Health check and observability enhancements
+- [ ] Database migrations squashing
+- [ ] Rate limiting and throttling

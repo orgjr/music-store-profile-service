@@ -1,40 +1,20 @@
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 
+from docs.api.profiles.customer import customer_schema
+from docs.api.profiles.staff import staff_schema
 from profiles.customer.models import Customer
+from profiles.customer.serializers import CustomerSerializer
 from profiles.staff.models import Staff
+from profiles.staff.serializers import StaffSerializer
 
 
-# Create your views here.
-@api_view(["POST"])
-def customer(request):
-    a = Customer.objects.create(
-        first_name="Marcelo",
-        last_name="Felisberto",
-        doc="10212345452",
-        address="rua seila",
-        address_number="234",
-        neighborhood="seila",
-        city="seila",
-        state="SP",
-        country="BRA",
-    )
-    return Response({"person": a.get_full_name()})
+@customer_schema
+class CustomerViewSet(ModelViewSet):
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
 
 
-@api_view(["POST"])
-def staff(request):
-    a = Staff.objects.create(
-        first_name="Claudia",
-        last_name="Mourão",
-        doc="10125511827",
-        address="rua seila",
-        address_number="234",
-        neighborhood="seila",
-        city="seila",
-        state="SP",
-        country="BRA",
-        rn="1925019",
-        role="customer services",
-    )
-    return Response({"person": a.get_full_name()})
+@staff_schema
+class StaffViewSet(ModelViewSet):
+    queryset = Staff.objects.all()
+    serializer_class = StaffSerializer
