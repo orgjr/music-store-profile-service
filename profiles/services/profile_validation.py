@@ -1,7 +1,4 @@
-def validate_alphanumeric(attr, value: str):
-    if not all(pace.isalnum() or pace.isspace() for pace in value) is True:
-        raise ValueError(f"{attr} has invalids characters")
-    return str(value).strip().lower()
+from profiles.validators import validate_alphanumeric, validate_doc
 
 
 class ProfileValidationService:
@@ -20,7 +17,7 @@ class ProfileValidationService:
     ):
         first_name = validate_alphanumeric("first_name", first_name)
         last_name = validate_alphanumeric("last_name", last_name)
-        doc = validate_alphanumeric("doc", doc)
+        doc = validate_doc(doc)
         address = validate_alphanumeric("address", address)
         if address_number is not None:
             address_number = validate_alphanumeric("address_number", address_number)

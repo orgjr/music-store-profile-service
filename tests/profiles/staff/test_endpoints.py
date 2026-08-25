@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.test import TestCase
+from django.utils.timezone import now
 from rest_framework.test import APIClient
 
 from profiles.staff.models import Staff
@@ -202,3 +205,63 @@ class StaffEndpointTestCase(TestCase):
             format="json",
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_list_staff_ordered_by_created_at_descending(self):
+        s1 = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="11111111111", rn="1111111"))
+        s2 = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="22222222222", rn="2222222"))
+        s3 = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="33333333333", rn="3333333"))
+
+        base = now()
+        Staff.objects.filter(pk=s1.pk).update(created_at=base - timedelta(days=3))
+        Staff.objects.filter(pk=s2.pk).update(created_at=base - timedelta(days=1))
+        Staff.objects.filter(pk=s3.pk).update(created_at=base)
+
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+
+        docs = [item["doc"] for item in response.data["results"]]
+        self.assertEqual(docs, ["33333333333", "22222222222", "11111111111"])
+
+    def test_list_staff_pagination_maintains_order_across_pages(self):
+        base = now()
+        for i in range(15):
+            doc = f"{i:011d}"
+            rn = f"{i:07d}"
+            s = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc=doc, rn=rn))
+            Staff.objects.filter(pk=s.pk).update(
+                created_at=base - timedelta(hours=15 - i),
+            )
+
+        page1 = self.client.get(self.list_url)
+        self.assertEqual(page1.status_code, 200)
+        self.assertEqual(page1.data["count"], 15)
+        self.assertEqual(len(page1.data["results"]), 10)
+
+        page2 = self.client.get(self.list_url, {"page": 2})
+        self.assertEqual(page2.status_code, 200)
+        self.assertEqual(len(page2.data["results"]), 5)
+
+        all_docs = (
+            [item["doc"] for item in page1.data["results"]]
+            + [item["doc"] for item in page2.data["results"]]
+        )
+        self.assertEqual(len(all_docs), 15)
+
+        all_created = []
+        for doc in all_docs:
+            all_created.append(
+                Staff.objects.get(doc=doc).created_at.isoformat()
+            )
+        self.assertEqual(all_created, sorted(all_created, reverse=True))
+
+    def test_list_staff_first_page_has_most_recent(self):
+        base = now()
+        s_old = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="11111111111", rn="1111111"))
+        s_new = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="22222222222", rn="2222222"))
+
+        Staff.objects.filter(pk=s_old.pk).update(created_at=base - timedelta(days=10))
+        Staff.objects.filter(pk=s_new.pk).update(created_at=base)
+
+        response = self.client.get(self.list_url)
+        first_item = response.data["results"][0]
+        self.assertEqual(first_item["doc"], "22222222222")

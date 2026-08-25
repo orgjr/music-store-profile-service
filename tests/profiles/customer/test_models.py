@@ -62,19 +62,19 @@ class CustomerModelTestCase(TestCase):
         )
         self.assertEqual(customer.first_name, "marcelo")
 
-    def test_create_customer_lowercases_input(self):
+    def test_create_customer_preserves_input_case(self):
         customer = Customer.objects.create(
             first_name="MARCELO",
             last_name="FELISBERTO",
-            doc="99887766551",
+            doc="88776655441",
             address="MAIN STREET",
             neighborhood="DOWNTOWN",
             city="SAO PAULO",
             state="sp",
             country="bra",
         )
-        self.assertEqual(customer.first_name, "marcelo")
-        self.assertEqual(customer.last_name, "felisberto")
+        self.assertEqual(customer.first_name, "MARCELO")
+        self.assertEqual(customer.last_name, "FELISBERTO")
 
     def test_create_customer_with_special_chars_in_last_name_raises_error(self):
         data = dict(VALID_CUSTOMER_DATA, last_name="silva@#", doc="88776655441")

@@ -40,7 +40,7 @@ Customer(Profile)          Staff(Profile)
                            └── role  (string, 50)
 ```
 
-Both concrete models use **custom managers** (`CustomerManager`, `StaffManager`) that apply input sanitization via `ProfileValidationService` (strip, lowercase, alphanumeric check) before persisting.
+Both concrete models use **custom managers** (`CustomerManager`, `StaffManager`) that apply input sanitization via `ProfileValidationService` (strip whitespace, alphanumeric validation) before persisting.
 
 ---
 
@@ -92,7 +92,7 @@ The API will be available at `http://localhost:8000`.
 python manage.py test tests --settings=config.settings.test --verbosity=2
 ```
 
-The test suite has **175 tests** covering unit (models, managers, validation service), functional (serializers), and endpoint (full HTTP requests) layers.
+The test suite has **181 tests** covering unit (models, managers, validation service), functional (serializers), and endpoint (full HTTP requests) layers.
 
 ---
 
@@ -121,8 +121,12 @@ profiles/                       # Profiles app
 │   ├── models.py               # Staff(Profile)
 │   ├── manager.py              # StaffManager (rn/role + profile validation)
 │   └── serializers.py          # StaffSerializer
+├── validators/                   # Input validators
+│   ├── __init__.py              # Exports validate_alphanumeric, validate_doc
+│   ├── alphanumeric.py          # validate_alphanumeric(attr, value)
+│   └── doc.py                   # validate_doc(value)
 ├── services/
-│   └── profile_validation.py   # ProfileValidationService + validate_alphanumeric
+│   └── profile_validation.py   # ProfileValidationService
 ├── views.py                    # CustomerViewSet + StaffViewSet (ModelViewSets)
 └── urls.py                     # DefaultRouter registrations
 
@@ -145,11 +149,11 @@ tests/                          # Centralized test suite
     ├── customer/
     │   ├── test_models.py      # 19 tests
     │   ├── test_serializers.py # 33 tests
-    │   └── test_endpoints.py   # 27 tests
+    │   └── test_endpoints.py   # 30 tests
     └── staff/
         ├── test_models.py      # 18 tests
         ├── test_serializers.py # 23 tests
-        └── test_endpoints.py   # 22 tests
+        └── test_endpoints.py   # 25 tests
 ```
 
 ---
@@ -167,7 +171,7 @@ tests/                          # Centralized test suite
 
 | Method | Route                               | Description      |
 | ------ | ----------------------------------- | ---------------- |
-| GET    | `/api/v1/profiles/customer/`        | List (paginated) |
+| GET    | `/api/v1/profiles/customer/`        | List (paginated, ordered by `created_at` desc) |
 | POST   | `/api/v1/profiles/customer/`        | Create           |
 | GET    | `/api/v1/profiles/customer/{uuid}/` | Retrieve         |
 | PUT    | `/api/v1/profiles/customer/{uuid}/` | Full update      |
@@ -178,7 +182,7 @@ tests/                          # Centralized test suite
 
 | Method | Route                            | Description      |
 | ------ | -------------------------------- | ---------------- |
-| GET    | `/api/v1/profiles/staff/`        | List (paginated) |
+| GET    | `/api/v1/profiles/staff/`        | List (paginated, ordered by `created_at` desc) |
 | POST   | `/api/v1/profiles/staff/`        | Create           |
 | GET    | `/api/v1/profiles/staff/{uuid}/` | Retrieve         |
 | PUT    | `/api/v1/profiles/staff/{uuid}/` | Full update      |

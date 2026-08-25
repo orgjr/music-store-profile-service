@@ -104,7 +104,7 @@ class StaffModelTestCase(TestCase):
         )
         self.assertEqual(staff.first_name, "claudia")
 
-    def test_create_staff_lowercases_profile_fields(self):
+    def test_create_staff_preserves_input_case(self):
         staff = Staff.objects.create(
             first_name="CLAUDIA",
             last_name="MOURAO",
@@ -117,7 +117,7 @@ class StaffModelTestCase(TestCase):
             rn="1925019",
             role="customer services",
         )
-        self.assertEqual(staff.first_name, "claudia")
+        self.assertEqual(staff.first_name, "CLAUDIA")
 
     def test_create_staff_with_numeric_role_is_valid(self):
         staff = Staff.objects.create(**dict(VALID_STAFF_DATA, role="12345", doc="88776655441"))

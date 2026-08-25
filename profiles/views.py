@@ -10,11 +10,11 @@ from profiles.staff.serializers import StaffSerializer
 
 @customer_schema
 class CustomerViewSet(ModelViewSet):
-    queryset = Customer.objects.all()
+    queryset = Customer.objects.all().order_by("-created_at")
     serializer_class = CustomerSerializer
 
 
 @staff_schema
 class StaffViewSet(ModelViewSet):
-    queryset = Staff.objects.all()
+    queryset = Staff.objects.all().order_by("-created_at")
     serializer_class = StaffSerializer
