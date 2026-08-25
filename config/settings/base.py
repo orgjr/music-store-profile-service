@@ -79,15 +79,15 @@ SPECTACULAR_SETTINGS = {
     "REDOC_DIST": "SIDECAR",
     "TAGS": [
         {
-            "name": "core",
+            "name": "Core",
             "description": "Core endpoints — service information and health check.",
         },
         {
-            "name": "customers",
+            "name": "Customers",
             "description": "Customer profile endpoints — list, create, retrieve, update and delete customers.",
         },
         {
-            "name": "staff",
+            "name": "Staff",
             "description": "Staff profile endpoints — list, create, retrieve, update and delete staff members.",
         },
     ],

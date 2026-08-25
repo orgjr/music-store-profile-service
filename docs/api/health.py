@@ -21,11 +21,13 @@ health_response_example = {
     "uptime_seconds": 123.453478,
 }
 
+health_no_content_example = {"detail": "Method \"POST\" not allowed."}
+
 
 health_schema = extend_schema(
     summary="Health check",
     description="Returns the service health status, timestamp and uptime.",
-    tags=["core"],
+    tags=["Core"],
     responses={
         200: OpenApiResponse(
             response=health_response_serializer,
@@ -35,6 +37,17 @@ health_schema = extend_schema(
                     "Health status",
                     summary="Healthy service response",
                     value=health_response_example,
+                    response_only=True,
+                ),
+            ],
+        ),
+        405: OpenApiResponse(
+            description="HTTP 405 - Method not allowed. Only GET is supported.",
+            examples=[
+                OpenApiExample(
+                    "Method not allowed",
+                    summary="Non-GET request rejected",
+                    value=health_no_content_example,
                     response_only=True,
                 ),
             ],

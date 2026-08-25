@@ -29,11 +29,13 @@ index_response_example = {
     "api_version": "v1",
 }
 
+index_no_content_example = {"detail": "Method \"POST\" not allowed."}
+
 
 index_schema = extend_schema(
     summary="Service information",
     description="Returns metadata for the Music Store Profile Service.",
-    tags=["core"],
+    tags=["Core"],
     responses={
         200: OpenApiResponse(
             response=index_response_serializer,
@@ -43,6 +45,17 @@ index_schema = extend_schema(
                     "Service metadata",
                     summary="Public service information",
                     value=index_response_example,
+                    response_only=True,
+                ),
+            ],
+        ),
+        405: OpenApiResponse(
+            description="HTTP 405 - Method not allowed. Only GET is supported.",
+            examples=[
+                OpenApiExample(
+                    "Method not allowed",
+                    summary="Non-GET request rejected",
+                    value=index_no_content_example,
                     response_only=True,
                 ),
             ],

@@ -24,7 +24,7 @@ customer_schema = extend_schema_view(
         extend_schema(
             summary="List customers",
             description="Returns a paginated list of registered customers.",
-            tags=["customers"],
+            tags=["Customers"],
             parameters=[page_parameter],
             responses={
                 200: OpenApiResponse(
@@ -45,7 +45,7 @@ customer_schema = extend_schema_view(
         extend_schema(
             summary="Create a customer",
             description="Registers a new customer in the system.",
-            tags=["customers"],
+            tags=["Customers"],
             request=CustomerSerializer,
             responses={
                 201: OpenApiResponse(
@@ -74,7 +74,7 @@ customer_schema = extend_schema_view(
         extend_schema(
             summary="Retrieve a customer",
             description="Returns the data for a specific customer by UUID.",
-            tags=["customers"],
+            tags=["Customers"],
             parameters=[customer_uuid_parameter],
             responses={
                 200: OpenApiResponse(
@@ -96,7 +96,7 @@ customer_schema = extend_schema_view(
         extend_schema(
             summary="Update a customer",
             description="Replaces all fields for an existing customer.",
-            tags=["customers"],
+            tags=["Customers"],
             parameters=[customer_uuid_parameter],
             request=CustomerSerializer,
             responses={
@@ -127,7 +127,7 @@ customer_schema = extend_schema_view(
         extend_schema(
             summary="Partially update a customer",
             description="Updates one or more fields for an existing customer.",
-            tags=["customers"],
+            tags=["Customers"],
             parameters=[customer_uuid_parameter],
             request=CustomerSerializer,
             responses={
@@ -161,7 +161,7 @@ customer_schema = extend_schema_view(
         extend_schema(
             summary="Delete a customer",
             description="Permanently deletes a customer from the system.",
-            tags=["customers"],
+            tags=["Customers"],
             parameters=[customer_uuid_parameter],
             responses={
                 204: OpenApiResponse(
