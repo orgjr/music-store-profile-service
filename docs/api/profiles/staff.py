@@ -7,11 +7,10 @@ from drf_spectacular.utils import (
 from profiles.staff.serializers import StaffSerializer
 
 from .config import (
+    method_not_allowed_response,
     not_found_response,
-    page_parameter,
     request_example,
     response_example,
-    staff_list_response_example,
     staff_patch_request_example,
     staff_request_example,
     staff_response_example,
@@ -21,22 +20,22 @@ from .config import (
 
 staff_schema = extend_schema_view(
     list=extend_schema(
-        summary="List staff members",
-        description="Returns a paginated list of registered staff members.",
+        summary="List staffs",
+        description="Returns a paginated list of registered staffs.",
         tags=["Staff"],
-        parameters=[page_parameter],
         responses={
             200: OpenApiResponse(
-                response=StaffSerializer(many=True),
-                description="HTTP 200 - Paginated staff list returned successfully.",
+                response=StaffSerializer,
+                description="Returns a list with staffs",
                 examples=[
                     response_example(
-                        "Staff list",
-                        "Paginated response with staff profiles",
-                        staff_list_response_example,
-                    ),
+                        "List staffs",
+                        "Paginated response with staffs",
+                        staff_response_example,
+                    )
                 ],
             ),
+            405: method_not_allowed_response("list"),
         },
     ),
     create=extend_schema(
@@ -47,7 +46,7 @@ staff_schema = extend_schema_view(
         responses={
             201: OpenApiResponse(
                 response=StaffSerializer,
-                description="HTTP 201 - Staff member created successfully.",
+                description="Staff member created successfully.",
                 examples=[
                     response_example(
                         "Created staff member",
@@ -74,7 +73,7 @@ staff_schema = extend_schema_view(
         responses={
             200: OpenApiResponse(
                 response=StaffSerializer,
-                description="HTTP 200 - Staff profile returned successfully.",
+                description="Staff profile returned successfully.",
                 examples=[
                     response_example(
                         "Staff member details",
@@ -95,7 +94,7 @@ staff_schema = extend_schema_view(
         responses={
             200: OpenApiResponse(
                 response=StaffSerializer,
-                description="HTTP 200 - Staff profile updated successfully.",
+                description="Staff profile updated successfully.",
                 examples=[
                     response_example(
                         "Updated staff member",
@@ -124,7 +123,7 @@ staff_schema = extend_schema_view(
         responses={
             200: OpenApiResponse(
                 response=StaffSerializer,
-                description="HTTP 200 - Staff profile partially updated successfully.",
+                description="Staff profile partially updated successfully.",
                 examples=[
                     response_example(
                         "Partially updated staff member",
@@ -153,9 +152,7 @@ staff_schema = extend_schema_view(
         tags=["Staff"],
         parameters=[staff_uuid_parameter],
         responses={
-            204: OpenApiResponse(
-                description="HTTP 204 - Staff profile deleted successfully."
-            ),
+            204: OpenApiResponse(description="Staff profile deleted successfully."),
             404: not_found_response("staff member"),
         },
     ),

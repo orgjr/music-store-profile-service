@@ -25,8 +25,8 @@ class ProfileValidationService:
             address_line_2 = validate_alphanumeric("address_line_2", address_line_2)
         neighborhood = validate_alphanumeric("neighborhood", neighborhood)
         city = validate_alphanumeric("city", city)
-        state = validate_alphanumeric("state", state)
-        country = validate_alphanumeric("country", country)
+        state = validate_alphanumeric("state", state).upper()
+        country = validate_alphanumeric("country", country).upper()
 
         return {
             "first_name": first_name,

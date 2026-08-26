@@ -15,7 +15,6 @@ VALID_STAFF_DATA = {
     "city": "sao paulo",
     "state": "sp",
     "country": "bra",
-    "rn": "1925019",
     "role": "customer services",
 }
 
@@ -28,7 +27,6 @@ MINIMAL_STAFF_DATA = {
     "city": "rio de janeiro",
     "state": "rj",
     "country": "bra",
-    "rn": "1234567",
     "role": "attendant",
 }
 
@@ -40,18 +38,18 @@ class StaffSerializerTestCase(TestCase):
 
     def test_serializer_detects_missing_required_field(self):
         data = dict(VALID_STAFF_DATA)
-        del data["rn"]
+        del data["role"]
         serializer = StaffSerializer(data=data)
         self.assertFalse(serializer.is_valid())
-        self.assertIn("rn", serializer.errors)
+        self.assertIn("role", serializer.errors)
 
-    def test_serializer_detects_blank_required_field(self):
-        data = dict(VALID_STAFF_DATA, rn="")
+    def test_serializer_rejects_blank_required_field(self):
+        data = dict(VALID_STAFF_DATA, role="")
         serializer = StaffSerializer(data=data)
         self.assertFalse(serializer.is_valid())
 
     def test_serializer_rejects_null_required_field(self):
-        data = dict(VALID_STAFF_DATA, rn=None)
+        data = dict(VALID_STAFF_DATA, role=None)
         serializer = StaffSerializer(data=data)
         self.assertFalse(serializer.is_valid())
 
@@ -59,17 +57,6 @@ class StaffSerializerTestCase(TestCase):
         data = dict(VALID_STAFF_DATA, role="a" * 51)
         serializer = StaffSerializer(data=data)
         self.assertFalse(serializer.is_valid())
-
-    def test_serializer_rejects_rn_exceeding_max_length(self):
-        data = dict(VALID_STAFF_DATA, rn="12345678")
-        serializer = StaffSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
-
-    def test_serializer_coerces_int_rn_to_string(self):
-        data = dict(VALID_STAFF_DATA, rn=1234567)
-        serializer = StaffSerializer(data=data)
-        self.assertTrue(serializer.is_valid())
-        self.assertEqual(serializer.validated_data["rn"], "1234567")
 
     def test_serializer_accepts_null_for_optional_fields(self):
         data = dict(VALID_STAFF_DATA, address_number=None, address_line_2=None)
@@ -81,7 +68,7 @@ class StaffSerializerTestCase(TestCase):
         serializer = StaffSerializer(data=data)
         self.assertFalse(serializer.is_valid())
         for field in ("first_name", "last_name", "doc", "address",
-                       "neighborhood", "city", "state", "country", "rn", "role"):
+                       "neighborhood", "city", "state", "country", "role"):
             self.assertIn(field, serializer.errors)
 
     def test_serializer_outputs_expected_fields(self):
@@ -91,9 +78,15 @@ class StaffSerializerTestCase(TestCase):
             "uuid", "first_name", "last_name", "doc",
             "address", "address_number", "address_line_2",
             "neighborhood", "city", "state", "country",
-            "created_at", "rn", "role",
+            "created_at", "staff_id", "role",
         }
         self.assertEqual(serializer.data.keys(), expected_fields)
+
+    def test_serializer_staff_id_is_read_only(self):
+        staff = Staff.objects.create(**MINIMAL_STAFF_DATA)
+        serializer = StaffSerializer(instance=staff)
+        self.assertIn("staff_id", serializer.data)
+        self.assertIsInstance(serializer.data["staff_id"], int)
 
     def test_serializer_detects_duplicate_doc(self):
         Staff.objects.create(**VALID_STAFF_DATA)
@@ -119,11 +112,6 @@ class StaffSerializerTestCase(TestCase):
 
     def test_serializer_rejects_blank_state(self):
         data = dict(VALID_STAFF_DATA, state="")
-        serializer = StaffSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
-
-    def test_serializer_rejects_blank_role(self):
-        data = dict(VALID_STAFF_DATA, role="")
         serializer = StaffSerializer(data=data)
         self.assertFalse(serializer.is_valid())
 

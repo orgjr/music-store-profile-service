@@ -18,7 +18,6 @@ VALID_STAFF_DATA = {
     "city": "sao paulo",
     "state": "sp",
     "country": "bra",
-    "rn": "1925019",
     "role": "customer services",
 }
 
@@ -31,7 +30,6 @@ MINIMAL_STAFF_DATA = {
     "city": "rio de janeiro",
     "state": "rj",
     "country": "bra",
-    "rn": "1234567",
     "role": "attendant",
 }
 
@@ -50,8 +48,13 @@ class StaffEndpointTestCase(TestCase):
 
     def test_create_staff_returns_expected_fields(self):
         response = self.client.post(self.list_url, VALID_STAFF_DATA, format="json")
-        for key in ("uuid", "first_name", "last_name", "doc", "rn", "role", "created_at"):
+        for key in ("uuid", "first_name", "last_name", "doc", "staff_id", "role", "created_at"):
             self.assertIn(key, response.data)
+
+    def test_create_staff_returns_staff_id(self):
+        response = self.client.post(self.list_url, VALID_STAFF_DATA, format="json")
+        self.assertIsInstance(response.data["staff_id"], int)
+        self.assertGreaterEqual(response.data["staff_id"], 1000000)
 
     def test_list_staff_returns_paginated_response(self):
         Staff.objects.create(**MINIMAL_STAFF_DATA)
@@ -113,30 +116,20 @@ class StaffEndpointTestCase(TestCase):
 
     def test_create_staff_with_missing_required_field_returns_400(self):
         data = dict(VALID_STAFF_DATA)
-        del data["rn"]
+        del data["role"]
         response = self.client.post(self.list_url, data, format="json")
         self.assertEqual(response.status_code, 400)
-        self.assertIn("rn", response.data)
-
-    def test_create_staff_with_blank_rn_returns_400(self):
-        data = dict(VALID_STAFF_DATA, rn="")
-        response = self.client.post(self.list_url, data, format="json")
-        self.assertEqual(response.status_code, 400)
+        self.assertIn("role", response.data)
 
     def test_create_staff_with_exceeding_max_length_returns_400(self):
         data = dict(VALID_STAFF_DATA, role="a" * 51)
         response = self.client.post(self.list_url, data, format="json")
         self.assertEqual(response.status_code, 400)
 
-    def test_create_staff_with_rn_exceeding_max_length_returns_400(self):
-        data = dict(VALID_STAFF_DATA, rn="12345678")
-        response = self.client.post(self.list_url, data, format="json")
-        self.assertEqual(response.status_code, 400)
-
     def test_update_staff_with_missing_required_field_returns_400(self):
         staff = Staff.objects.create(**MINIMAL_STAFF_DATA)
         data = dict(VALID_STAFF_DATA, doc="19283746550")
-        del data["rn"]
+        del data["role"]
         response = self.client.put(
             self._detail_url(staff.uuid), data, format="json",
         )
@@ -207,9 +200,9 @@ class StaffEndpointTestCase(TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_list_staff_ordered_by_created_at_descending(self):
-        s1 = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="11111111111", rn="1111111"))
-        s2 = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="22222222222", rn="2222222"))
-        s3 = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="33333333333", rn="3333333"))
+        s1 = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="11111111111"))
+        s2 = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="22222222222"))
+        s3 = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="33333333333"))
 
         base = now()
         Staff.objects.filter(pk=s1.pk).update(created_at=base - timedelta(days=3))
@@ -226,8 +219,7 @@ class StaffEndpointTestCase(TestCase):
         base = now()
         for i in range(15):
             doc = f"{i:011d}"
-            rn = f"{i:07d}"
-            s = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc=doc, rn=rn))
+            s = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc=doc))
             Staff.objects.filter(pk=s.pk).update(
                 created_at=base - timedelta(hours=15 - i),
             )
@@ -256,8 +248,8 @@ class StaffEndpointTestCase(TestCase):
 
     def test_list_staff_first_page_has_most_recent(self):
         base = now()
-        s_old = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="11111111111", rn="1111111"))
-        s_new = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="22222222222", rn="2222222"))
+        s_old = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="11111111111"))
+        s_new = Staff.objects.create(**dict(MINIMAL_STAFF_DATA, doc="22222222222"))
 
         Staff.objects.filter(pk=s_old.pk).update(created_at=base - timedelta(days=10))
         Staff.objects.filter(pk=s_new.pk).update(created_at=base)

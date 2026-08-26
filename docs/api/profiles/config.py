@@ -14,8 +14,8 @@ customer_request_example = {
     "address_line_2": "apartment 12",
     "neighborhood": "downtown",
     "city": "sao paulo",
-    "state": "sp",
-    "country": "bra",
+    "state": "SP",
+    "country": "BRA",
 }
 
 customer_response_example = {
@@ -33,30 +33,16 @@ staff_request_example = {
     "address_line_2": "room 4",
     "neighborhood": "central district",
     "city": "sao paulo",
-    "state": "sp",
-    "country": "bra",
-    "rn": "1925019",
+    "state": "SP",
+    "country": "BRA",
     "role": "customer services",
 }
 
 staff_response_example = {
     "uuid": "9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d",
     **staff_request_example,
+    "staff_id": 1000001,
     "created_at": "2026-07-24T12:00:00-03:00",
-}
-
-customer_list_response_example = {
-    "count": 1,
-    "next": None,
-    "previous": None,
-    "results": [customer_response_example],
-}
-
-staff_list_response_example = {
-    "count": 1,
-    "next": None,
-    "previous": None,
-    "results": [staff_response_example],
 }
 
 customer_patch_request_example = {
@@ -76,14 +62,6 @@ validation_error_example = {
 
 not_found_error_example = {"detail": "Not found."}
 
-
-page_parameter = OpenApiParameter(
-    name="page",
-    type=int,
-    location=OpenApiParameter.QUERY,
-    description="A page number within the paginated result set.",
-    required=False,
-)
 
 customer_uuid_parameter = OpenApiParameter(
     name="uuid",
@@ -111,7 +89,7 @@ def response_example(name, summary, value):
 def validation_error_response(entity_name):
     return OpenApiResponse(
         description=(
-            f"HTTP 400 - Invalid {entity_name} payload. Returned when required "
+            f"Invalid {entity_name} payload. Returned when required "
             "fields are missing, fields have invalid values, or unique fields "
             "already exist."
         ),
@@ -127,9 +105,7 @@ def validation_error_response(entity_name):
 
 def not_found_response(entity_name):
     return OpenApiResponse(
-        description=(
-            f"HTTP 404 - {entity_name.title()} not found for the provided UUID."
-        ),
+        description=(f"{entity_name.title()} not found for the provided UUID."),
         examples=[
             response_example(
                 f"{entity_name.title()} not found",
@@ -137,4 +113,12 @@ def not_found_response(entity_name):
                 not_found_error_example,
             ),
         ],
+    )
+
+
+def method_not_allowed_response(action):
+    return OpenApiResponse(
+        description=(
+            f"Method not allowed. Only GET is supported for the {action} action."
+        ),
     )

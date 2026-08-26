@@ -7,13 +7,12 @@ from drf_spectacular.utils import (
 from profiles.customer.serializers import CustomerSerializer
 
 from .config import (
-    customer_list_response_example,
     customer_patch_request_example,
     customer_request_example,
     customer_response_example,
     customer_uuid_parameter,
+    method_not_allowed_response,
     not_found_response,
-    page_parameter,
     request_example,
     response_example,
     validation_error_response,
@@ -25,19 +24,19 @@ customer_schema = extend_schema_view(
             summary="List customers",
             description="Returns a paginated list of registered customers.",
             tags=["Customers"],
-            parameters=[page_parameter],
             responses={
                 200: OpenApiResponse(
-                    response=CustomerSerializer(many=True),
-                    description="HTTP 200 - Paginated customer list returned successfully.",
+                    response=CustomerSerializer,
+                    description="Returns a list with customers",
                     examples=[
                         response_example(
-                            "Customer list",
-                            "Paginated response with customer profiles",
-                            customer_list_response_example,
-                        ),
+                            "List customers",
+                            "Paginated response with customers",
+                            customer_response_example,
+                        )
                     ],
                 ),
+                405: method_not_allowed_response("list"),
             },
         ),
     ),
@@ -50,7 +49,7 @@ customer_schema = extend_schema_view(
             responses={
                 201: OpenApiResponse(
                     response=CustomerSerializer,
-                    description="HTTP 201 - Customer created successfully.",
+                    description="Customer created successfully.",
                     examples=[
                         response_example(
                             "Created customer",
@@ -79,7 +78,7 @@ customer_schema = extend_schema_view(
             responses={
                 200: OpenApiResponse(
                     response=CustomerSerializer,
-                    description="HTTP 200 - Customer profile returned successfully.",
+                    description="Customer profile returned successfully.",
                     examples=[
                         response_example(
                             "Customer details",
@@ -102,7 +101,7 @@ customer_schema = extend_schema_view(
             responses={
                 200: OpenApiResponse(
                     response=CustomerSerializer,
-                    description="HTTP 200 - Customer profile updated successfully.",
+                    description="Customer profile updated successfully.",
                     examples=[
                         response_example(
                             "Updated customer",
@@ -133,7 +132,7 @@ customer_schema = extend_schema_view(
             responses={
                 200: OpenApiResponse(
                     response=CustomerSerializer,
-                    description="HTTP 200 - Customer profile partially updated successfully.",
+                    description="Customer profile partially updated successfully.",
                     examples=[
                         response_example(
                             "Partially updated customer",
@@ -165,7 +164,7 @@ customer_schema = extend_schema_view(
             parameters=[customer_uuid_parameter],
             responses={
                 204: OpenApiResponse(
-                    description="HTTP 204 - Customer profile deleted successfully."
+                    description="Customer profile deleted successfully."
                 ),
                 404: not_found_response("customer"),
             },

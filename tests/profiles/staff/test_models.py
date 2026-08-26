@@ -14,7 +14,6 @@ VALID_STAFF_DATA = {
     "city": "sao paulo",
     "state": "sp",
     "country": "bra",
-    "rn": "1925019",
     "role": "customer services",
 }
 
@@ -27,7 +26,6 @@ MINIMAL_STAFF_DATA = {
     "city": "rio de janeiro",
     "state": "rj",
     "country": "bra",
-    "rn": "1234567",
     "role": "attendant",
 }
 
@@ -37,7 +35,7 @@ class StaffModelTestCase(TestCase):
         staff = Staff.objects.create(**VALID_STAFF_DATA)
         self.assertIsNotNone(staff.pk)
         self.assertEqual(staff.first_name, "claudia")
-        self.assertEqual(staff.rn, "1925019")
+        self.assertIsNotNone(staff.staff_id)
         self.assertEqual(staff.role, "customer services")
 
     def test_create_staff_without_optional_fields(self):
@@ -49,26 +47,6 @@ class StaffModelTestCase(TestCase):
         staff = Staff.objects.create(**MINIMAL_STAFF_DATA)
         self.assertEqual(str(staff), "Carlos Silva")
 
-    def test_create_staff_with_non_numeric_rn_raises_error(self):
-        data = dict(VALID_STAFF_DATA, rn="abc1234", doc="99988877766")
-        with self.assertRaises(ValueError):
-            Staff.objects.create(**data)
-
-    def test_create_staff_with_non_numeric_rn_special_chars_raises_error(self):
-        data = dict(VALID_STAFF_DATA, rn="123-456", doc="88877766655")
-        with self.assertRaises(ValueError):
-            Staff.objects.create(**data)
-
-    def test_create_staff_with_empty_rn_raises_error(self):
-        data = dict(VALID_STAFF_DATA, rn="", doc="77766655544")
-        with self.assertRaises(ValueError):
-            Staff.objects.create(**data)
-
-    def test_create_staff_with_spaces_in_rn_raises_error(self):
-        data = dict(VALID_STAFF_DATA, rn="123 456", doc="66655544433")
-        with self.assertRaises(ValueError):
-            Staff.objects.create(**data)
-
     def test_create_staff_with_invalid_role_chars_raises_error(self):
         data = dict(VALID_STAFF_DATA, role="attendant@", doc="99988877766")
         with self.assertRaises(ValueError):
@@ -78,11 +56,6 @@ class StaffModelTestCase(TestCase):
         data = dict(VALID_STAFF_DATA, role="manager<>", doc="88877766655")
         with self.assertRaises(ValueError):
             Staff.objects.create(**data)
-
-    def test_create_staff_with_empty_role_is_stored_as_empty(self):
-        data = dict(VALID_STAFF_DATA, role="", doc="77766655544")
-        staff = Staff.objects.create(**data)
-        self.assertEqual(staff.role, "")
 
     def test_create_staff_with_parentheses_in_role_raises_error(self):
         data = dict(VALID_STAFF_DATA, role="attendant()", doc="66655544433")
@@ -99,7 +72,6 @@ class StaffModelTestCase(TestCase):
             city="  sao paulo  ",
             state="sp",
             country="bra",
-            rn="1925019",
             role="customer services",
         )
         self.assertEqual(staff.first_name, "claudia")
@@ -114,7 +86,6 @@ class StaffModelTestCase(TestCase):
             city="SAO PAULO",
             state="sp",
             country="bra",
-            rn="1925019",
             role="customer services",
         )
         self.assertEqual(staff.first_name, "CLAUDIA")

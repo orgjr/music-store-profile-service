@@ -1,6 +1,7 @@
 from django.db.models.manager import Manager
 
 from profiles.services.profile_validation import ProfileValidationService
+from profiles.validators import validate_alphanumeric
 
 
 class StaffManager(Manager):
@@ -14,17 +15,13 @@ class StaffManager(Manager):
         city,
         state,
         country,
-        rn,
         role,
         address_number=None,
         address_line_2=None,
         **extra_fields,
     ):
 
-        if not str(rn).isnumeric():
-            raise ValueError("rn must be numeric")
-        if not all(val.isalnum() or val.isspace() for val in str(role)) is True:
-            raise ValueError("role has invalids characters")
+        role = validate_alphanumeric("role", role)
 
         admin = ProfileValidationService.validate(
             first_name=first_name,
@@ -39,7 +36,7 @@ class StaffManager(Manager):
             country=country,
         )
 
-        admin = self.model(**admin, rn=rn, role=role, **extra_fields)
+        admin = self.model(**admin, role=role, **extra_fields)
         admin.save(using=self._db)
 
         return admin

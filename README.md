@@ -36,8 +36,8 @@ Profile (abstract)
 └── created_at    (datetime, auto)
 
 Customer(Profile)          Staff(Profile)
-                           ├── rn    (string, 7)
-                           └── role  (string, 50)
+                           ├── staff_id (integer, 7, unique)
+                           └── role     (string, 50)
 ```
 
 Both concrete models use **custom managers** (`CustomerManager`, `StaffManager`) that apply input sanitization via `ProfileValidationService` (strip whitespace, alphanumeric validation) before persisting.
@@ -92,7 +92,7 @@ The API will be available at `http://localhost:8000`.
 python manage.py test tests --settings=config.settings.test --verbosity=2
 ```
 
-The test suite has **181 tests** covering unit (models, managers, validation service), functional (serializers), and endpoint (full HTTP requests) layers.
+The test suite has **191 tests** covering unit (models, managers, validation service), functional (serializers), and endpoint (full HTTP requests) layers.
 
 ---
 
@@ -119,7 +119,7 @@ profiles/                       # Profiles app
 │   └── serializers.py          # CustomerSerializer
 ├── staff/
 │   ├── models.py               # Staff(Profile)
-│   ├── manager.py              # StaffManager (rn/role + profile validation)
+│   ├── manager.py              # StaffManager (staff_id/role + profile validation)
 │   └── serializers.py          # StaffSerializer
 ├── validators/                   # Input validators
 │   ├── __init__.py              # Exports validate_alphanumeric, validate_doc
@@ -147,13 +147,14 @@ tests/                          # Centralized test suite
     │   ├── test_models.py      # 4 tests
     │   └── test_validation.py  # 22 tests
     ├── customer/
-    │   ├── test_models.py      # 19 tests
-    │   ├── test_serializers.py # 33 tests
-    │   └── test_endpoints.py   # 30 tests
+    │   ├── test_models.py      # 17 tests
+    │   ├── test_serializers.py # 29 tests
+    │   └── test_endpoints.py   # 29 tests
     └── staff/
-        ├── test_models.py      # 18 tests
-        ├── test_serializers.py # 23 tests
-        └── test_endpoints.py   # 25 tests
+        ├── test_models.py      # 9 tests
+        ├── test_serializers.py # 20 tests
+        ├── test_endpoints.py   # 26 tests
+        └── test_staff_id.py    # 18 tests
 ```
 
 ---
@@ -169,25 +170,25 @@ tests/                          # Centralized test suite
 
 ### Customer CRUD
 
-| Method | Route                               | Description      |
-| ------ | ----------------------------------- | ---------------- |
+| Method | Route                               | Description                                    |
+| ------ | ----------------------------------- | ---------------------------------------------- |
 | GET    | `/api/v1/profiles/customer/`        | List (paginated, ordered by `created_at` desc) |
-| POST   | `/api/v1/profiles/customer/`        | Create           |
-| GET    | `/api/v1/profiles/customer/{uuid}/` | Retrieve         |
-| PUT    | `/api/v1/profiles/customer/{uuid}/` | Full update      |
-| PATCH  | `/api/v1/profiles/customer/{uuid}/` | Partial update   |
-| DELETE | `/api/v1/profiles/customer/{uuid}/` | Delete           |
+| POST   | `/api/v1/profiles/customer/`        | Create                                         |
+| GET    | `/api/v1/profiles/customer/{uuid}/` | Retrieve                                       |
+| PUT    | `/api/v1/profiles/customer/{uuid}/` | Full update                                    |
+| PATCH  | `/api/v1/profiles/customer/{uuid}/` | Partial update                                 |
+| DELETE | `/api/v1/profiles/customer/{uuid}/` | Delete                                         |
 
 ### Staff CRUD
 
-| Method | Route                            | Description      |
-| ------ | -------------------------------- | ---------------- |
+| Method | Route                            | Description                                    |
+| ------ | -------------------------------- | ---------------------------------------------- |
 | GET    | `/api/v1/profiles/staff/`        | List (paginated, ordered by `created_at` desc) |
-| POST   | `/api/v1/profiles/staff/`        | Create           |
-| GET    | `/api/v1/profiles/staff/{uuid}/` | Retrieve         |
-| PUT    | `/api/v1/profiles/staff/{uuid}/` | Full update      |
-| PATCH  | `/api/v1/profiles/staff/{uuid}/` | Partial update   |
-| DELETE | `/api/v1/profiles/staff/{uuid}/` | Delete           |
+| POST   | `/api/v1/profiles/staff/`        | Create                                         |
+| GET    | `/api/v1/profiles/staff/{uuid}/` | Retrieve                                       |
+| PUT    | `/api/v1/profiles/staff/{uuid}/` | Full update                                    |
+| PATCH  | `/api/v1/profiles/staff/{uuid}/` | Partial update                                 |
+| DELETE | `/api/v1/profiles/staff/{uuid}/` | Delete                                         |
 
 ### OpenAPI Documentation
 
@@ -251,6 +252,6 @@ volumes:
 
 - [ ] Authentication and authorization
 - [ ] CI/CD with GitHub Actions
-- [ ] Health check and observability enhancements
+- [x] Health check and observability enhancements
 - [ ] Database migrations squashing
 - [ ] Rate limiting and throttling
