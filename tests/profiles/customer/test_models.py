@@ -1,9 +1,13 @@
+from uuid import uuid4
+
 from django.test import TestCase
+from django.utils import timezone
 
 from profiles.customer.models import Customer
 
 
 VALID_CUSTOMER_DATA = {
+    "user_uuid": uuid4(),
     "first_name": "marcelo",
     "last_name": "felisberto",
     "doc": "10212345452",
@@ -17,6 +21,7 @@ VALID_CUSTOMER_DATA = {
 }
 
 MINIMAL_CUSTOMER_DATA = {
+    "user_uuid": uuid4(),
     "first_name": "ana",
     "last_name": "souza",
     "doc": "99887766554",
@@ -35,6 +40,16 @@ class CustomerModelTestCase(TestCase):
         self.assertEqual(customer.first_name, "marcelo")
         self.assertEqual(customer.doc, "10212345452")
 
+    def test_create_customer_requires_unique_user_uuid(self):
+        user_uuid = uuid4()
+        Customer.objects.create(**dict(VALID_CUSTOMER_DATA, user_uuid=user_uuid, doc="10212345453"))
+
+        with self.assertRaises(Exception) as ctx:
+            Customer.objects.create(**dict(VALID_CUSTOMER_DATA, user_uuid=user_uuid, doc="10212345454"))
+
+        exception_text = str(ctx.exception)
+        self.assertTrue("UNIQUE" in exception_text or "user_uuid" in exception_text)
+
     def test_create_customer_without_optional_fields(self):
         customer = Customer.objects.create(**MINIMAL_CUSTOMER_DATA)
         self.assertIsNone(customer.address_number)
@@ -51,6 +66,7 @@ class CustomerModelTestCase(TestCase):
 
     def test_create_customer_sanitizes_whitespace(self):
         customer = Customer.objects.create(
+            user_uuid=uuid4(),
             first_name="  marcelo  ",
             last_name="  felisberto  ",
             doc="11223344556",
@@ -64,6 +80,7 @@ class CustomerModelTestCase(TestCase):
 
     def test_create_customer_preserves_input_case(self):
         customer = Customer.objects.create(
+            user_uuid=uuid4(),
             first_name="MARCELO",
             last_name="FELISBERTO",
             doc="88776655441",
@@ -123,6 +140,7 @@ class CustomerModelTestCase(TestCase):
 
     def test_create_customer_with_valid_alphanumeric_with_accents(self):
         customer = Customer.objects.create(
+            user_uuid=uuid4(),
             first_name="josé",
             last_name="da silva",
             doc="99887766552",
@@ -136,6 +154,7 @@ class CustomerModelTestCase(TestCase):
 
     def test_create_customer_with_unicode_is_valid(self):
         customer = Customer.objects.create(
+            user_uuid=uuid4(),
             first_name="αβγ",
             last_name="δέ",
             doc="99887766553",
@@ -146,3 +165,23 @@ class CustomerModelTestCase(TestCase):
             country="grc",
         )
         self.assertEqual(customer.first_name, "αβγ")
+
+    def test_updated_at_is_set_on_create(self):
+        customer = Customer.objects.create(**MINIMAL_CUSTOMER_DATA)
+        self.assertIsNotNone(customer.updated_at)
+        self.assertIsInstance(customer.updated_at, type(timezone.now()))
+
+    def test_updated_at_changes_on_update(self):
+        customer = Customer.objects.create(**MINIMAL_CUSTOMER_DATA)
+        original_updated = customer.updated_at
+
+        customer.first_name = "ana maria"
+        customer.save()
+        customer.refresh_from_db()
+
+        self.assertGreater(customer.updated_at, original_updated)
+        self.assertEqual(customer.first_name, "ana maria")
+
+    def test_updated_at_is_timezone_aware(self):
+        customer = Customer.objects.create(**MINIMAL_CUSTOMER_DATA)
+        self.assertTrue(timezone.is_aware(customer.updated_at))

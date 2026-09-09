@@ -1,8 +1,6 @@
 from drf_spectacular.utils import (
     OpenApiExample,
-    OpenApiParameter,
     OpenApiResponse,
-    OpenApiTypes,
 )
 
 customer_request_example = {
@@ -20,8 +18,10 @@ customer_request_example = {
 
 customer_response_example = {
     "uuid": "3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d",
+    "user_uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     **customer_request_example,
     "created_at": "2026-07-24T12:00:00-03:00",
+    "updated_at": "2026-07-24T12:30:00-03:00",
 }
 
 staff_request_example = {
@@ -40,42 +40,12 @@ staff_request_example = {
 
 staff_response_example = {
     "uuid": "9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d",
+    "user_uuid": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
     **staff_request_example,
     "staff_id": 1000001,
     "created_at": "2026-07-24T12:00:00-03:00",
+    "updated_at": "2026-07-24T12:30:00-03:00",
 }
-
-customer_patch_request_example = {
-    "address": "new avenue",
-    "address_number": "1000",
-    "city": "sao paulo",
-}
-
-staff_patch_request_example = {
-    "role": "store manager",
-    "address_line_2": "administrative room",
-}
-
-validation_error_example = {
-    "doc": ["profile with this doc already exists."],
-}
-
-not_found_error_example = {"detail": "Not found."}
-
-
-customer_uuid_parameter = OpenApiParameter(
-    name="uuid",
-    type=OpenApiTypes.UUID,
-    location=OpenApiParameter.PATH,
-    description="A UUID string that identifies a customer.",
-)
-
-staff_uuid_parameter = OpenApiParameter(
-    name="uuid",
-    type=OpenApiTypes.UUID,
-    location=OpenApiParameter.PATH,
-    description="A UUID string that identifies a staff member.",
-)
 
 
 def request_example(name, summary, value):
@@ -97,7 +67,7 @@ def validation_error_response(entity_name):
             response_example(
                 "Validation error",
                 "Invalid or duplicated request data",
-                validation_error_example,
+                {"doc": ["profile with this doc already exists."]},
             ),
         ],
     )
@@ -105,20 +75,38 @@ def validation_error_response(entity_name):
 
 def not_found_response(entity_name):
     return OpenApiResponse(
-        description=(f"{entity_name.title()} not found for the provided UUID."),
+        description=(f"{entity_name.title()} not found for the authenticated user."),
         examples=[
             response_example(
                 f"{entity_name.title()} not found",
-                "UUID does not match an existing resource",
-                not_found_error_example,
+                "No resource matches the request",
+                {"detail": "Not found."},
             ),
         ],
     )
 
 
-def method_not_allowed_response(action):
+def unauthorized_response():
     return OpenApiResponse(
-        description=(
-            f"Method not allowed. Only GET is supported for the {action} action."
-        ),
+        description="Authentication token is missing, invalid or expired.",
+        examples=[
+            response_example(
+                "Unauthenticated",
+                "No valid JWT provided in the Authorization header",
+                {"detail": "Authentication credentials were not provided."},
+            ),
+        ],
+    )
+
+
+def forbidden_response(reason):
+    return OpenApiResponse(
+        description=f"Access denied: {reason}",
+        examples=[
+            response_example(
+                "Permission denied",
+                "Authenticated user lacks the required role",
+                {"detail": "You do not have permission to perform this action."},
+            ),
+        ],
     )

@@ -7,89 +7,97 @@ from drf_spectacular.utils import (
 from profiles.staff.serializers import StaffSerializer
 
 from .config import (
-    method_not_allowed_response,
+    forbidden_response,
     not_found_response,
     request_example,
     response_example,
-    staff_patch_request_example,
     staff_request_example,
     staff_response_example,
-    staff_uuid_parameter,
+    unauthorized_response,
     validation_error_response,
 )
 
-staff_schema = extend_schema_view(
+staffs_schema = extend_schema_view(
     list=extend_schema(
-        summary="List staffs",
-        description="Returns a paginated list of registered staffs.",
+        summary="List staff members",
+        description=(
+            "Returns all registered staff profiles, ordered by creation date "
+            "(newest first). Access is restricted to authenticated staff members."
+        ),
         tags=["Staff"],
         responses={
             200: OpenApiResponse(
-                response=StaffSerializer,
-                description="Returns a list with staffs",
+                response=StaffSerializer(many=True),
+                description="List of staff profiles.",
                 examples=[
                     response_example(
-                        "List staffs",
-                        "Paginated response with staffs",
-                        staff_response_example,
+                        "Staff list",
+                        "All registered staff profiles",
+                        [staff_response_example],
                     )
                 ],
             ),
-            405: method_not_allowed_response("list"),
+            401: unauthorized_response(),
+            403: forbidden_response("only staff members can list staff profiles."),
         },
     ),
     create=extend_schema(
         summary="Create a staff member",
-        description="Registers a new staff member in the system.",
+        description=(
+            "Registers a new staff profile. Requires staff access. "
+            "The `user_uuid` is taken from the authenticated user's JWT token. "
+            "The `staff_id` is auto-generated."
+        ),
         tags=["Staff"],
         request=StaffSerializer,
         responses={
             201: OpenApiResponse(
                 response=StaffSerializer,
-                description="Staff member created successfully.",
+                description="Staff profile created successfully.",
                 examples=[
                     response_example(
                         "Created staff member",
-                        "Newly registered staff profile",
+                        "Newly created staff profile",
                         staff_response_example,
-                    ),
+                    )
                 ],
             ),
-            400: validation_error_response("staff member"),
+            400: validation_error_response("staff profile"),
+            401: unauthorized_response(),
         },
         examples=[
             request_example(
                 "New staff member",
-                "Complete request body for staff creation",
+                "Request body for a staff profile",
                 staff_request_example,
-            ),
+            )
         ],
     ),
     retrieve=extend_schema(
         summary="Retrieve a staff member",
-        description="Returns the data for a specific staff member by UUID.",
+        description="Returns a single staff profile by its primary key. Requires staff access.",
         tags=["Staff"],
-        parameters=[staff_uuid_parameter],
         responses={
             200: OpenApiResponse(
                 response=StaffSerializer,
                 description="Staff profile returned successfully.",
                 examples=[
                     response_example(
-                        "Staff member details",
-                        "Staff profile found by UUID",
+                        "Staff profile",
+                        "A single staff profile",
                         staff_response_example,
-                    ),
+                    )
                 ],
             ),
-            404: not_found_response("staff member"),
+            401: unauthorized_response(),
+            403: forbidden_response("only staff members can access staff profiles."),
+            404: not_found_response("staff profile"),
         },
     ),
     update=extend_schema(
-        summary="Update a staff member",
-        description="Replaces all fields for an existing staff member.",
+        summary="Replace a staff member",
+        description="Replaces all fields of an existing staff profile. Requires staff access.",
         tags=["Staff"],
-        parameters=[staff_uuid_parameter],
         request=StaffSerializer,
         responses={
             200: OpenApiResponse(
@@ -100,25 +108,26 @@ staff_schema = extend_schema_view(
                         "Updated staff member",
                         "Staff profile after full update",
                         staff_response_example,
-                    ),
+                    )
                 ],
             ),
-            400: validation_error_response("staff member"),
-            404: not_found_response("staff member"),
+            400: validation_error_response("staff profile"),
+            401: unauthorized_response(),
+            403: forbidden_response("only staff members can modify staff profiles."),
+            404: not_found_response("staff profile"),
         },
         examples=[
             request_example(
-                "Replace staff member",
-                "Complete request body for staff replacement",
+                "Update staff member",
+                "Full request body for staff profile update",
                 staff_request_example,
-            ),
+            )
         ],
     ),
     partial_update=extend_schema(
         summary="Partially update a staff member",
-        description="Updates one or more fields for an existing staff member.",
+        description="Updates one or more fields of an existing staff profile. Requires staff access.",
         tags=["Staff"],
-        parameters=[staff_uuid_parameter],
         request=StaffSerializer,
         responses={
             200: OpenApiResponse(
@@ -130,30 +139,34 @@ staff_schema = extend_schema_view(
                         "Staff profile after partial update",
                         {
                             **staff_response_example,
-                            **staff_patch_request_example,
+                            "role": "store manager",
+                            "address_line_2": "administrative room",
                         },
-                    ),
+                    )
                 ],
             ),
-            400: validation_error_response("staff member"),
-            404: not_found_response("staff member"),
+            400: validation_error_response("staff profile"),
+            401: unauthorized_response(),
+            403: forbidden_response("only staff members can modify staff profiles."),
+            404: not_found_response("staff profile"),
         },
         examples=[
             request_example(
                 "Patch staff member",
-                "Partial request body for staff update",
-                staff_patch_request_example,
-            ),
+                "Partial request body for staff profile update",
+                {"role": "store manager", "address_line_2": "administrative room"},
+            )
         ],
     ),
     destroy=extend_schema(
         summary="Delete a staff member",
-        description="Permanently deletes a staff member from the system.",
+        description="Permanently deletes a staff profile. Requires staff access.",
         tags=["Staff"],
-        parameters=[staff_uuid_parameter],
         responses={
             204: OpenApiResponse(description="Staff profile deleted successfully."),
-            404: not_found_response("staff member"),
+            401: unauthorized_response(),
+            403: forbidden_response("only staff members can delete staff profiles."),
+            404: not_found_response("staff profile"),
         },
     ),
 )

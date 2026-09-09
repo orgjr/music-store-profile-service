@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
@@ -7,6 +9,7 @@ from profiles.customer.models import Customer
 class ProfileValidationTestCase(TestCase):
     def _make_data(self, **overrides):
         data = {
+            "user_uuid": uuid4(),
             "first_name": "john",
             "last_name": "doe",
             "doc": "12345678901",
@@ -78,6 +81,16 @@ class ProfileValidationTestCase(TestCase):
                 )
             )
         self.assertIn("UNIQUE", str(ctx.exception))
+
+    def test_duplicate_user_uuid_raises_integrity_error(self):
+        shared_user_uuid = uuid4()
+        Customer.objects.create(**self._make_data(doc="12345678902", user_uuid=shared_user_uuid))
+
+        with self.assertRaises(Exception) as ctx:
+            Customer.objects.create(**self._make_data(doc="12345678903", user_uuid=shared_user_uuid))
+
+        exception_text = str(ctx.exception)
+        self.assertTrue("user_uuid" in exception_text or "UNIQUE" in exception_text or "already exists" in exception_text)
 
     def test_full_clean_rejects_missing_required_field(self):
         data = self._make_data(doc="99999999999")

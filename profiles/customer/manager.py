@@ -1,11 +1,12 @@
 from django.db.models.manager import Manager
 
-from profiles.services.profile_validation import ProfileValidationService
+from profiles.services.validation import ProfileValidationService
 
 
 class CustomerManager(Manager):
     def create(
         self,
+        user_uuid,
         first_name,
         last_name,
         doc,
@@ -19,6 +20,7 @@ class CustomerManager(Manager):
         **extra_fields,
     ):
         person = ProfileValidationService.validate(
+            user_uuid=user_uuid,
             first_name=first_name,
             last_name=last_name,
             doc=doc,

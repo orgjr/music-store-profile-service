@@ -6,15 +6,16 @@ Profile management microservice for the **Music Store** project, responsible for
 
 ## Stack
 
-| Layer     | Technology                 |
-| --------- | -------------------------- |
-| Language  | Python 3.13                |
-| Framework | Django 6.0                 |
-| API       | Django REST Framework 3.17 |
-| OpenAPI   | drf-spectacular + sidecar  |
-| Linter    | Ruff 0.16                  |
-| Templates | djHTML / djLint            |
-| Container | Docker / Docker Compose    |
+| Layer      | Technology                           |
+| ---------- | ------------------------------------ |
+| Language   | Python 3.13                          |
+| Framework  | Django 6.0                           |
+| API        | Django REST Framework 3.17           |
+| Auth       | djangorestframework-simplejwt 5.5.1  |
+| OpenAPI    | drf-spectacular + sidecar            |
+| Linter     | Ruff 0.16                            |
+| Templates  | djHTML / djLint                      |
+| Container  | Docker / Docker Compose              |
 
 ---
 
@@ -23,6 +24,7 @@ Profile management microservice for the **Music Store** project, responsible for
 ```
 Profile (abstract)
 ├── uuid          (UUID, PK)
+├── user_uuid     (UUID, unique)
 ├── first_name    (string, 100)
 ├── last_name     (string, 100)
 ├── doc           (string, 11, unique)
@@ -33,14 +35,15 @@ Profile (abstract)
 ├── city          (string, 250)
 ├── state         (string, 2)
 ├── country       (string, 3)
-└── created_at    (datetime, auto)
+├── created_at    (datetime, auto_now_add)
+└── updated_at    (datetime, auto_now)
 
 Customer(Profile)          Staff(Profile)
                            ├── staff_id (integer, 7, unique)
                            └── role     (string, 50)
 ```
 
-Both concrete models use **custom managers** (`CustomerManager`, `StaffManager`) that apply input sanitization via `ProfileValidationService` (strip whitespace, alphanumeric validation) before persisting.
+Both concrete models use **custom managers** (`CustomerManager`, `StaffManager`) that apply input sanitization via `ProfileValidationService` (strip whitespace, alphanumeric validation) before persisting. Each profile is linked to an auth-service user via the `user_uuid` field, which is read-only and set automatically on creation from the JWT token.
 
 ---
 
@@ -92,7 +95,7 @@ The API will be available at `http://localhost:8000`.
 python manage.py test tests --settings=config.settings.test --verbosity=2
 ```
 
-The test suite has **191 tests** covering unit (models, managers, validation service), functional (serializers), and endpoint (full HTTP requests) layers.
+The test suite has **206 tests** covering unit (models, managers, validation service), functional (serializers), and endpoint (full HTTP requests) layers.
 
 ---
 
@@ -101,42 +104,53 @@ The test suite has **191 tests** covering unit (models, managers, validation ser
 ```
 config/                         # Django project configuration
 ├── settings/
-│   ├── base.py                 # Shared settings (apps, REST, spectacular)
+│   ├── base.py                 # Shared settings (apps, REST, spectacular, JWT)
 │   ├── dev.py                  # SQLite, debug
 │   ├── prod.py                 # PostgreSQL, production hardening
 │   └── test.py                 # In-memory SQLite
 
 core/                           # Core app — service info + health
+├── exceptions.py               # Custom API exceptions
 ├── views.py                    # index/health endpoints
 └── urls.py
 
 profiles/                       # Profiles app
 ├── base/
-│   └── models.py               # Profile (abstract base)
+│   └── models.py               # Profile (abstract base + user_uuid)
 ├── customer/
 │   ├── models.py               # Customer(Profile)
 │   ├── manager.py              # CustomerManager (validation on create)
-│   └── serializers.py          # CustomerSerializer
+│   ├── serializers.py          # CustomerSerializer
+│   ├── views.py                # CustomerViewSet (JWT, per-action permissions)
+│   └── urls.py                 # SimpleRouter → customers/
 ├── staff/
-│   ├── models.py               # Staff(Profile)
+│   ├── models.py               # Staff(Profile) + StaffId field
 │   ├── manager.py              # StaffManager (staff_id/role + profile validation)
-│   └── serializers.py          # StaffSerializer
+│   ├── serializers.py          # StaffSerializer
+│   ├── views.py                # StaffViewSet (JWT, staff-only)
+│   └── urls.py                 # SimpleRouter → staffs/
 ├── validators/                   # Input validators
 │   ├── __init__.py              # Exports validate_alphanumeric, validate_doc
 │   ├── alphanumeric.py          # validate_alphanumeric(attr, value)
 │   └── doc.py                   # validate_doc(value)
 ├── services/
-│   └── profile_validation.py   # ProfileValidationService
-├── views.py                    # CustomerViewSet + StaffViewSet (ModelViewSets)
-└── urls.py                     # DefaultRouter registrations
+│   ├── validation.py            # ProfileValidationService
+│   └── request.py               # Request helpers (placeholder)
+├── permissions.py               # IsOwner, IsStaff, IsOwnerOrStaff
+├── migrations/                  # Database migrations
+└── urls.py                     # Aggregator — includes customer/ and staff/ urls
 
 docs/                           # OpenAPI schema annotations (drf-spectacular)
 └── api/
     ├── index.py                # Service info endpoint schema
     ├── health.py               # Health check endpoint schema
     └── profiles/
-        ├── customer.py         # Customer CRUD schemas
-        └── staff.py            # Staff CRUD schemas
+        ├── __init__.py         # Exports customers_schema, staffs_schema
+        ├── config.py           # Shared examples, helpers, response builders
+        ├── customers.py        # Customer CRUD schemas
+        └── staffs.py           # Staff CRUD schemas
+
+schema.yml                      # Generated OpenAPI 3.0.3 schema
 
 tests/                          # Centralized test suite
 ├── core/
@@ -144,22 +158,25 @@ tests/                          # Centralized test suite
 │   └── test_health.py          # 8 tests
 └── profiles/
     ├── base/
-    │   ├── test_models.py      # 4 tests
-    │   └── test_validation.py  # 22 tests
+    │   ├── test_models.py      # 7 tests
+    │   └── test_validation.py  # 23 tests
     ├── customer/
-    │   ├── test_models.py      # 17 tests
+    │   ├── test_models.py      # 21 tests
     │   ├── test_serializers.py # 29 tests
-    │   └── test_endpoints.py   # 29 tests
+    │   └── test_endpoints.py   # 31 tests
     └── staff/
-        ├── test_models.py      # 9 tests
+        ├── test_models.py      # 13 tests
         ├── test_serializers.py # 20 tests
-        ├── test_endpoints.py   # 26 tests
+        ├── test_endpoints.py   # 27 tests
         └── test_staff_id.py    # 18 tests
 ```
 
 ---
 
 ## Endpoints
+
+All profile endpoints require a **JWT Bearer token** (`Authorization: Bearer <token>`).
+Core endpoints accept optional authentication.
 
 ### Core
 
@@ -168,27 +185,27 @@ tests/                          # Centralized test suite
 | GET    | `/api/v1/`        | Service metadata (name, version…) |
 | GET    | `/api/v1/health/` | Health check (status, uptime)     |
 
-### Customer CRUD
+### Profiles — Customers
 
-| Method | Route                               | Description                                    |
-| ------ | ----------------------------------- | ---------------------------------------------- |
-| GET    | `/api/v1/profiles/customer/`        | List (paginated, ordered by `created_at` desc) |
-| POST   | `/api/v1/profiles/customer/`        | Create                                         |
-| GET    | `/api/v1/profiles/customer/{uuid}/` | Retrieve                                       |
-| PUT    | `/api/v1/profiles/customer/{uuid}/` | Full update                                    |
-| PATCH  | `/api/v1/profiles/customer/{uuid}/` | Partial update                                 |
-| DELETE | `/api/v1/profiles/customer/{uuid}/` | Delete                                         |
+| Method | Route                                     | Description                                       | Auth            |
+| ------ | ----------------------------------------- | ------------------------------------------------- | --------------- |
+| GET    | `/api/v1/profiles/customers/`             | List all customers (newest first)                 | Staff           |
+| POST   | `/api/v1/profiles/customers/`             | Create a customer (`user_uuid` from JWT)          | Authenticated   |
+| GET    | `/api/v1/profiles/customers/{uuid}/`      | Retrieve a customer                              | Owner or Staff  |
+| PUT    | `/api/v1/profiles/customers/{uuid}/`      | Replace a customer (all fields)                  | Owner or Staff  |
+| PATCH  | `/api/v1/profiles/customers/{uuid}/`      | Partially update a customer                      | Owner or Staff  |
+| DELETE | `/api/v1/profiles/customers/{uuid}/`      | Delete a customer                                | Staff           |
 
-### Staff CRUD
+### Profiles — Staff
 
-| Method | Route                            | Description                                    |
-| ------ | -------------------------------- | ---------------------------------------------- |
-| GET    | `/api/v1/profiles/staff/`        | List (paginated, ordered by `created_at` desc) |
-| POST   | `/api/v1/profiles/staff/`        | Create                                         |
-| GET    | `/api/v1/profiles/staff/{uuid}/` | Retrieve                                       |
-| PUT    | `/api/v1/profiles/staff/{uuid}/` | Full update                                    |
-| PATCH  | `/api/v1/profiles/staff/{uuid}/` | Partial update                                 |
-| DELETE | `/api/v1/profiles/staff/{uuid}/` | Delete                                         |
+| Method | Route                                     | Description                                       | Auth   |
+| ------ | ----------------------------------------- | ------------------------------------------------- | ------ |
+| GET    | `/api/v1/profiles/staffs/`               | List all staff members (newest first)             | Staff  |
+| POST   | `/api/v1/profiles/staffs/`               | Create a staff member (`user_uuid` from JWT)      | Staff  |
+| GET    | `/api/v1/profiles/staffs/{uuid}/`        | Retrieve a staff member                          | Staff  |
+| PUT    | `/api/v1/profiles/staffs/{uuid}/`        | Replace a staff member (all fields)              | Staff  |
+| PATCH  | `/api/v1/profiles/staffs/{uuid}/`        | Partially update a staff member                  | Staff  |
+| DELETE | `/api/v1/profiles/staffs/{uuid}/`        | Delete a staff member                            | Staff  |
 
 ### OpenAPI Documentation
 
@@ -250,8 +267,10 @@ volumes:
 
 ## Planned Improvements
 
-- [ ] Authentication and authorization
+- [x] Authentication and authorization (JWT via simplejwt)
 - [ ] CI/CD with GitHub Actions
 - [x] Health check and observability enhancements
 - [ ] Database migrations squashing
 - [ ] Rate limiting and throttling
+- [x] Adapt endpoint tests to new routes and JWT authentication
+- [ ] Implement self-profile endpoint (`me/`) with `get_queryset()` lookup by `user_uuid`

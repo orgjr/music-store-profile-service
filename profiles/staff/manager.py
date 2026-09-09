@@ -1,12 +1,13 @@
 from django.db.models.manager import Manager
 
-from profiles.services.profile_validation import ProfileValidationService
+from profiles.services.validation import ProfileValidationService
 from profiles.validators import validate_alphanumeric
 
 
 class StaffManager(Manager):
     def create(
         self,
+        user_uuid,
         first_name,
         last_name,
         doc,
@@ -24,6 +25,7 @@ class StaffManager(Manager):
         role = validate_alphanumeric("role", role)
 
         admin = ProfileValidationService.validate(
+            user_uuid=user_uuid,
             first_name=first_name,
             last_name=last_name,
             doc=doc,

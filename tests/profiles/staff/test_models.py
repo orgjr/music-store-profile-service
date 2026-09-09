@@ -1,9 +1,13 @@
+from uuid import uuid4
+
 from django.test import TestCase
+from django.utils import timezone
 
 from profiles.staff.models import Staff
 
 
 VALID_STAFF_DATA = {
+    "user_uuid": uuid4(),
     "first_name": "claudia",
     "last_name": "mourao",
     "doc": "10125511827",
@@ -18,6 +22,7 @@ VALID_STAFF_DATA = {
 }
 
 MINIMAL_STAFF_DATA = {
+    "user_uuid": uuid4(),
     "first_name": "carlos",
     "last_name": "silva",
     "doc": "55667788990",
@@ -37,6 +42,16 @@ class StaffModelTestCase(TestCase):
         self.assertEqual(staff.first_name, "claudia")
         self.assertIsNotNone(staff.staff_id)
         self.assertEqual(staff.role, "customer services")
+
+    def test_create_staff_requires_unique_user_uuid(self):
+        user_uuid = uuid4()
+        Staff.objects.create(**dict(VALID_STAFF_DATA, user_uuid=user_uuid, doc="10125511828"))
+
+        with self.assertRaises(Exception) as ctx:
+            Staff.objects.create(**dict(VALID_STAFF_DATA, user_uuid=user_uuid, doc="10125511829"))
+
+        exception_text = str(ctx.exception)
+        self.assertTrue("already exists" in exception_text or "user_uuid" in exception_text or "UNIQUE" in exception_text)
 
     def test_create_staff_without_optional_fields(self):
         staff = Staff.objects.create(**MINIMAL_STAFF_DATA)
@@ -64,6 +79,7 @@ class StaffModelTestCase(TestCase):
 
     def test_create_staff_sanitizes_whitespace_in_profile_fields(self):
         staff = Staff.objects.create(
+            user_uuid=uuid4(),
             first_name="  claudia  ",
             last_name="  mourao  ",
             doc="99887766551",
@@ -78,6 +94,7 @@ class StaffModelTestCase(TestCase):
 
     def test_create_staff_preserves_input_case(self):
         staff = Staff.objects.create(
+            user_uuid=uuid4(),
             first_name="CLAUDIA",
             last_name="MOURAO",
             doc="99887766552",
@@ -93,3 +110,23 @@ class StaffModelTestCase(TestCase):
     def test_create_staff_with_numeric_role_is_valid(self):
         staff = Staff.objects.create(**dict(VALID_STAFF_DATA, role="12345", doc="88776655441"))
         self.assertEqual(staff.role, "12345")
+
+    def test_updated_at_is_set_on_create(self):
+        staff = Staff.objects.create(**MINIMAL_STAFF_DATA)
+        self.assertIsNotNone(staff.updated_at)
+        self.assertIsInstance(staff.updated_at, type(timezone.now()))
+
+    def test_updated_at_changes_on_update(self):
+        staff = Staff.objects.create(**MINIMAL_STAFF_DATA)
+        original_updated = staff.updated_at
+
+        staff.first_name = "carlos alberto"
+        staff.save()
+        staff.refresh_from_db()
+
+        self.assertGreater(staff.updated_at, original_updated)
+        self.assertEqual(staff.first_name, "carlos alberto")
+
+    def test_updated_at_is_timezone_aware(self):
+        staff = Staff.objects.create(**MINIMAL_STAFF_DATA)
+        self.assertTrue(timezone.is_aware(staff.updated_at))

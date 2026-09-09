@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.test import TestCase
 
 from profiles.staff.models import Staff
@@ -13,6 +15,7 @@ STAFF_BASE_DATA = {
     "state": "sp",
     "country": "bra",
     "role": "customer services",
+    "user_uuid": uuid4(),
 }
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -23,6 +26,7 @@ def _make_staff(**overrides):
 
     data = dict(STAFF_BASE_DATA, **overrides)
     data.setdefault("doc", f"{random.randint(10**10, 10**11 - 1)}")
+    data["user_uuid"] = uuid4()
     return data
 
 

@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from docs.api.health import health_schema
 from docs.api.index import index_response_example, index_schema
 
-START_TIME = timezone.now()
+START_TIME = timezone.localtime()
 
 
 @index_schema
@@ -17,11 +17,11 @@ def index(request):
 @health_schema
 @api_view(["GET"])
 def health(request):
-    uptime = timezone.now() - START_TIME
+    uptime = timezone.localtime() - START_TIME
     return Response(
         {
             "status": "ok",
-            "timestamp": timezone.now(),
+            "timestamp": timezone.localtime(),
             "uptime_seconds": uptime.total_seconds(),
         }
     )

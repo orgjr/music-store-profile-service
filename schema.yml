@@ -1,0 +1,1099 @@
+openapi: 3.0.3
+info:
+  title: Music Store Profile Service
+  version: 0.9.0
+  description: Profile management microservice for the Music Store project — responsible
+    for creating and querying customers and staff members.
+  contact:
+    name: Osmar Garcia
+    email: osmar.rgj@gmail.com
+    url: https://github.com/orgjr
+  license:
+    name: MIT
+paths:
+  /api/v1/:
+    get:
+      operationId: root_retrieve
+      description: Returns metadata for the Music Store Profile Service.
+      summary: Service information
+      tags:
+      - Core
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceInfo'
+              examples:
+                ServiceMetadata:
+                  value:
+                    name: Music Store Profile Service
+                    version: 0.9.0
+                    description: Profile management microservice for the Music Store
+                      project
+                    environment: development
+                    redoc_url: /api/v1/redoc/
+                    health_url: /api/v1/health/
+                    api_version: v1
+                  summary: Public service information
+          description: HTTP 200 - Service metadata returned successfully.
+        '405':
+          description: HTTP 405 - Method not allowed. Only GET is supported.
+  /api/v1/health/:
+    get:
+      operationId: health_retrieve
+      description: Returns the service health status, timestamp and uptime.
+      summary: Health check
+      tags:
+      - Core
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+              examples:
+                HealthStatus:
+                  value:
+                    status: ok
+                    timestamp: '2026-07-24T12:00:00-03:00'
+                    uptime_seconds: 123.453478
+                  summary: Healthy service response
+          description: HTTP 200 - Service health status returned successfully.
+        '405':
+          description: HTTP 405 - Method not allowed. Only GET is supported.
+  /api/v1/profiles/customers/:
+    get:
+      operationId: profiles_customers_list
+      description: Returns all registered customer profiles, ordered by creation date
+        (newest first). Access is restricted to authenticated staff members.
+      summary: List customers
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Customers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCustomerList'
+              examples:
+                CustomerList:
+                  value:
+                    count: 123
+                    next: http://api.example.org/accounts/?page=4
+                    previous: http://api.example.org/accounts/?page=2
+                    results:
+                    - - uuid: 3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d
+                        user_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                        first_name: marcelo
+                        last_name: felisberto
+                        doc: '10212345452'
+                        address: main street
+                        address_number: '234'
+                        address_line_2: apartment 12
+                        neighborhood: downtown
+                        city: sao paulo
+                        state: SP
+                        country: BRA
+                        created_at: '2026-07-24T12:00:00-03:00'
+                        updated_at: '2026-07-24T12:30:00-03:00'
+                  summary: All registered customer profiles
+          description: List of customer profiles.
+        '401':
+          description: Authentication token is missing, invalid or expired.
+        '403':
+          description: 'Access denied: only staff members can list customer profiles.'
+    post:
+      operationId: profiles_customers_create
+      description: Registers a new customer profile. Requires authentication. The
+        `user_uuid` is taken from the authenticated user's JWT token.
+      summary: Create a customer
+      tags:
+      - Customers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Customer'
+            examples:
+              NewCustomer:
+                value:
+                  first_name: marcelo
+                  last_name: felisberto
+                  doc: '10212345452'
+                  address: main street
+                  address_number: '234'
+                  address_line_2: apartment 12
+                  neighborhood: downtown
+                  city: sao paulo
+                  state: SP
+                  country: BRA
+                summary: Request body for a customer profile
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Customer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Customer'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+              examples:
+                CreatedCustomer:
+                  value:
+                    uuid: 3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d
+                    user_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                    first_name: marcelo
+                    last_name: felisberto
+                    doc: '10212345452'
+                    address: main street
+                    address_number: '234'
+                    address_line_2: apartment 12
+                    neighborhood: downtown
+                    city: sao paulo
+                    state: SP
+                    country: BRA
+                    created_at: '2026-07-24T12:00:00-03:00'
+                    updated_at: '2026-07-24T12:30:00-03:00'
+                  summary: Newly created customer profile
+          description: Customer created successfully.
+        '400':
+          description: Invalid customer payload. Returned when required fields are
+            missing, fields have invalid values, or unique fields already exist.
+        '401':
+          description: Authentication token is missing, invalid or expired.
+  /api/v1/profiles/customers/{uuid}/:
+    get:
+      operationId: profiles_customers_retrieve
+      description: Returns a single customer profile by its primary key. Access is
+        restricted to the profile owner or staff.
+      summary: Retrieve a customer
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this customer.
+        required: true
+      tags:
+      - Customers
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+              examples:
+                CustomerProfile:
+                  value:
+                    uuid: 3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d
+                    user_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                    first_name: marcelo
+                    last_name: felisberto
+                    doc: '10212345452'
+                    address: main street
+                    address_number: '234'
+                    address_line_2: apartment 12
+                    neighborhood: downtown
+                    city: sao paulo
+                    state: SP
+                    country: BRA
+                    created_at: '2026-07-24T12:00:00-03:00'
+                    updated_at: '2026-07-24T12:30:00-03:00'
+                  summary: A single customer profile
+          description: Customer profile returned successfully.
+        '401':
+          description: Authentication token is missing, invalid or expired.
+        '403':
+          description: 'Access denied: only the profile owner or staff members can
+            access customer profiles.'
+        '404':
+          description: Customer not found for the authenticated user.
+    put:
+      operationId: profiles_customers_update
+      description: Replaces all fields of an existing customer profile. Access is
+        restricted to the profile owner or staff.
+      summary: Replace a customer
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this customer.
+        required: true
+      tags:
+      - Customers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Customer'
+            examples:
+              UpdateCustomer:
+                value:
+                  first_name: marcelo
+                  last_name: felisberto
+                  doc: '10212345452'
+                  address: main street
+                  address_number: '234'
+                  address_line_2: apartment 12
+                  neighborhood: downtown
+                  city: sao paulo
+                  state: SP
+                  country: BRA
+                summary: Full request body for customer profile update
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Customer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Customer'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+              examples:
+                UpdatedCustomer:
+                  value:
+                    uuid: 3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d
+                    user_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                    first_name: marcelo
+                    last_name: felisberto
+                    doc: '10212345452'
+                    address: main street
+                    address_number: '234'
+                    address_line_2: apartment 12
+                    neighborhood: downtown
+                    city: sao paulo
+                    state: SP
+                    country: BRA
+                    created_at: '2026-07-24T12:00:00-03:00'
+                    updated_at: '2026-07-24T12:30:00-03:00'
+                  summary: Customer profile after full update
+          description: Customer updated successfully.
+        '400':
+          description: Invalid customer payload. Returned when required fields are
+            missing, fields have invalid values, or unique fields already exist.
+        '401':
+          description: Authentication token is missing, invalid or expired.
+        '403':
+          description: 'Access denied: only the profile owner or staff members can
+            modify customer profiles.'
+        '404':
+          description: Customer not found for the authenticated user.
+    patch:
+      operationId: profiles_customers_partial_update
+      description: Updates one or more fields of an existing customer profile. Access
+        is restricted to the profile owner or staff.
+      summary: Partially update a customer
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this customer.
+        required: true
+      tags:
+      - Customers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCustomer'
+            examples:
+              PatchCustomer:
+                value:
+                  address: new avenue
+                  address_number: '1000'
+                  city: sao paulo
+                summary: Partial request body for customer profile update
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCustomer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCustomer'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+              examples:
+                PartiallyUpdatedCustomer:
+                  value:
+                    uuid: 3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d
+                    user_uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                    first_name: marcelo
+                    last_name: felisberto
+                    doc: '10212345452'
+                    address: new avenue
+                    address_number: '1000'
+                    address_line_2: apartment 12
+                    neighborhood: downtown
+                    city: sao paulo
+                    state: SP
+                    country: BRA
+                    created_at: '2026-07-24T12:00:00-03:00'
+                    updated_at: '2026-07-24T12:30:00-03:00'
+                  summary: Customer profile after partial update
+          description: Customer partially updated successfully.
+        '400':
+          description: Invalid customer payload. Returned when required fields are
+            missing, fields have invalid values, or unique fields already exist.
+        '401':
+          description: Authentication token is missing, invalid or expired.
+        '403':
+          description: 'Access denied: only the profile owner or staff members can
+            modify customer profiles.'
+        '404':
+          description: Customer not found for the authenticated user.
+    delete:
+      operationId: profiles_customers_destroy
+      description: Permanently deletes a customer profile. Only staff can perform
+        this action.
+      summary: Delete a customer
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this customer.
+        required: true
+      tags:
+      - Customers
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Customer deleted successfully.
+        '401':
+          description: Authentication token is missing, invalid or expired.
+        '403':
+          description: 'Access denied: only staff members can delete customer profiles.'
+        '404':
+          description: Customer not found for the authenticated user.
+  /api/v1/profiles/staffs/:
+    get:
+      operationId: profiles_staffs_list
+      description: Returns all registered staff profiles, ordered by creation date
+        (newest first). Access is restricted to authenticated staff members.
+      summary: List staff members
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Staff
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStaffList'
+              examples:
+                StaffList:
+                  value:
+                    count: 123
+                    next: http://api.example.org/accounts/?page=4
+                    previous: http://api.example.org/accounts/?page=2
+                    results:
+                    - - uuid: 9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d
+                        user_uuid: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                        first_name: claudia
+                        last_name: mourao
+                        doc: '10125511827'
+                        address: market avenue
+                        address_number: '234'
+                        address_line_2: room 4
+                        neighborhood: central district
+                        city: sao paulo
+                        state: SP
+                        country: BRA
+                        role: customer services
+                        staff_id: 1000001
+                        created_at: '2026-07-24T12:00:00-03:00'
+                        updated_at: '2026-07-24T12:30:00-03:00'
+                  summary: All registered staff profiles
+          description: List of staff profiles.
+        '401':
+          description: Authentication token is missing, invalid or expired.
+        '403':
+          description: 'Access denied: only staff members can list staff profiles.'
+    post:
+      operationId: profiles_staffs_create
+      description: Registers a new staff profile. Requires staff access. The `user_uuid`
+        is taken from the authenticated user's JWT token. The `staff_id` is auto-generated.
+      summary: Create a staff member
+      tags:
+      - Staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Staff'
+            examples:
+              NewStaffMember:
+                value:
+                  first_name: claudia
+                  last_name: mourao
+                  doc: '10125511827'
+                  address: market avenue
+                  address_number: '234'
+                  address_line_2: room 4
+                  neighborhood: central district
+                  city: sao paulo
+                  state: SP
+                  country: BRA
+                  role: customer services
+                summary: Request body for a staff profile
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Staff'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Staff'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Staff'
+              examples:
+                CreatedStaffMember:
+                  value:
+                    uuid: 9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d
+                    user_uuid: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                    first_name: claudia
+                    last_name: mourao
+                    doc: '10125511827'
+                    address: market avenue
+                    address_number: '234'
+                    address_line_2: room 4
+                    neighborhood: central district
+                    city: sao paulo
+                    state: SP
+                    country: BRA
+                    role: customer services
+                    staff_id: 1000001
+                    created_at: '2026-07-24T12:00:00-03:00'
+                    updated_at: '2026-07-24T12:30:00-03:00'
+                  summary: Newly created staff profile
+          description: Staff profile created successfully.
+        '400':
+          description: Invalid staff profile payload. Returned when required fields
+            are missing, fields have invalid values, or unique fields already exist.
+        '401':
+          description: Authentication token is missing, invalid or expired.
+  /api/v1/profiles/staffs/{uuid}/:
+    get:
+      operationId: profiles_staffs_retrieve
+      description: Returns a single staff profile by its primary key. Requires staff
+        access.
+      summary: Retrieve a staff member
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff.
+        required: true
+      tags:
+      - Staff
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Staff'
+              examples:
+                StaffProfile:
+                  value:
+                    uuid: 9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d
+                    user_uuid: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                    first_name: claudia
+                    last_name: mourao
+                    doc: '10125511827'
+                    address: market avenue
+                    address_number: '234'
+                    address_line_2: room 4
+                    neighborhood: central district
+                    city: sao paulo
+                    state: SP
+                    country: BRA
+                    role: customer services
+                    staff_id: 1000001
+                    created_at: '2026-07-24T12:00:00-03:00'
+                    updated_at: '2026-07-24T12:30:00-03:00'
+                  summary: A single staff profile
+          description: Staff profile returned successfully.
+        '401':
+          description: Authentication token is missing, invalid or expired.
+        '403':
+          description: 'Access denied: only staff members can access staff profiles.'
+        '404':
+          description: Staff Profile not found for the authenticated user.
+    put:
+      operationId: profiles_staffs_update
+      description: Replaces all fields of an existing staff profile. Requires staff
+        access.
+      summary: Replace a staff member
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff.
+        required: true
+      tags:
+      - Staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Staff'
+            examples:
+              UpdateStaffMember:
+                value:
+                  first_name: claudia
+                  last_name: mourao
+                  doc: '10125511827'
+                  address: market avenue
+                  address_number: '234'
+                  address_line_2: room 4
+                  neighborhood: central district
+                  city: sao paulo
+                  state: SP
+                  country: BRA
+                  role: customer services
+                summary: Full request body for staff profile update
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Staff'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Staff'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Staff'
+              examples:
+                UpdatedStaffMember:
+                  value:
+                    uuid: 9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d
+                    user_uuid: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                    first_name: claudia
+                    last_name: mourao
+                    doc: '10125511827'
+                    address: market avenue
+                    address_number: '234'
+                    address_line_2: room 4
+                    neighborhood: central district
+                    city: sao paulo
+                    state: SP
+                    country: BRA
+                    role: customer services
+                    staff_id: 1000001
+                    created_at: '2026-07-24T12:00:00-03:00'
+                    updated_at: '2026-07-24T12:30:00-03:00'
+                  summary: Staff profile after full update
+          description: Staff profile updated successfully.
+        '400':
+          description: Invalid staff profile payload. Returned when required fields
+            are missing, fields have invalid values, or unique fields already exist.
+        '401':
+          description: Authentication token is missing, invalid or expired.
+        '403':
+          description: 'Access denied: only staff members can modify staff profiles.'
+        '404':
+          description: Staff Profile not found for the authenticated user.
+    patch:
+      operationId: profiles_staffs_partial_update
+      description: Updates one or more fields of an existing staff profile. Requires
+        staff access.
+      summary: Partially update a staff member
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff.
+        required: true
+      tags:
+      - Staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStaff'
+            examples:
+              PatchStaffMember:
+                value:
+                  role: store manager
+                  address_line_2: administrative room
+                summary: Partial request body for staff profile update
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStaff'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStaff'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Staff'
+              examples:
+                PartiallyUpdatedStaffMember:
+                  value:
+                    uuid: 9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d
+                    user_uuid: b2c3d4e5-f6a7-8901-bcde-f12345678901
+                    first_name: claudia
+                    last_name: mourao
+                    doc: '10125511827'
+                    address: market avenue
+                    address_number: '234'
+                    address_line_2: administrative room
+                    neighborhood: central district
+                    city: sao paulo
+                    state: SP
+                    country: BRA
+                    role: store manager
+                    staff_id: 1000001
+                    created_at: '2026-07-24T12:00:00-03:00'
+                    updated_at: '2026-07-24T12:30:00-03:00'
+                  summary: Staff profile after partial update
+          description: Staff profile partially updated successfully.
+        '400':
+          description: Invalid staff profile payload. Returned when required fields
+            are missing, fields have invalid values, or unique fields already exist.
+        '401':
+          description: Authentication token is missing, invalid or expired.
+        '403':
+          description: 'Access denied: only staff members can modify staff profiles.'
+        '404':
+          description: Staff Profile not found for the authenticated user.
+    delete:
+      operationId: profiles_staffs_destroy
+      description: Permanently deletes a staff profile. Requires staff access.
+      summary: Delete a staff member
+      parameters:
+      - in: path
+        name: uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff.
+        required: true
+      tags:
+      - Staff
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Staff profile deleted successfully.
+        '401':
+          description: Authentication token is missing, invalid or expired.
+        '403':
+          description: 'Access denied: only staff members can delete staff profiles.'
+        '404':
+          description: Staff Profile not found for the authenticated user.
+components:
+  schemas:
+    Customer:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        user_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        doc:
+          type: string
+          maxLength: 11
+        address:
+          type: string
+          maxLength: 250
+        address_number:
+          type: string
+          nullable: true
+          maxLength: 10
+        address_line_2:
+          type: string
+          nullable: true
+          maxLength: 250
+        neighborhood:
+          type: string
+          maxLength: 250
+        city:
+          type: string
+          maxLength: 250
+        state:
+          type: string
+          maxLength: 2
+        country:
+          type: string
+          maxLength: 3
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - city
+      - country
+      - created_at
+      - doc
+      - first_name
+      - last_name
+      - neighborhood
+      - state
+      - updated_at
+      - user_uuid
+      - uuid
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        uptime_seconds:
+          type: number
+          format: double
+      required:
+      - status
+      - timestamp
+      - uptime_seconds
+    PaginatedCustomerList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+    PaginatedStaffList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Staff'
+    PatchedCustomer:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        user_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        doc:
+          type: string
+          maxLength: 11
+        address:
+          type: string
+          maxLength: 250
+        address_number:
+          type: string
+          nullable: true
+          maxLength: 10
+        address_line_2:
+          type: string
+          nullable: true
+          maxLength: 250
+        neighborhood:
+          type: string
+          maxLength: 250
+        city:
+          type: string
+          maxLength: 250
+        state:
+          type: string
+          maxLength: 2
+        country:
+          type: string
+          maxLength: 3
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedStaff:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        user_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        doc:
+          type: string
+          maxLength: 11
+        address:
+          type: string
+          maxLength: 250
+        address_number:
+          type: string
+          nullable: true
+          maxLength: 10
+        address_line_2:
+          type: string
+          nullable: true
+          maxLength: 250
+        neighborhood:
+          type: string
+          maxLength: 250
+        city:
+          type: string
+          maxLength: 250
+        state:
+          type: string
+          maxLength: 2
+        country:
+          type: string
+          maxLength: 3
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        role:
+          type: string
+          maxLength: 50
+        staff_id:
+          type: integer
+          readOnly: true
+    ServiceInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        environment:
+          type: string
+        redoc_url:
+          type: string
+        health_url:
+          type: string
+        api_version:
+          type: string
+      required:
+      - api_version
+      - description
+      - environment
+      - health_url
+      - name
+      - redoc_url
+      - version
+    Staff:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        user_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        doc:
+          type: string
+          maxLength: 11
+        address:
+          type: string
+          maxLength: 250
+        address_number:
+          type: string
+          nullable: true
+          maxLength: 10
+        address_line_2:
+          type: string
+          nullable: true
+          maxLength: 250
+        neighborhood:
+          type: string
+          maxLength: 250
+        city:
+          type: string
+          maxLength: 250
+        state:
+          type: string
+          maxLength: 2
+        country:
+          type: string
+          maxLength: 3
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        role:
+          type: string
+          maxLength: 50
+        staff_id:
+          type: integer
+          readOnly: true
+      required:
+      - address
+      - city
+      - country
+      - created_at
+      - doc
+      - first_name
+      - last_name
+      - neighborhood
+      - role
+      - staff_id
+      - state
+      - updated_at
+      - user_uuid
+      - uuid
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: Core
+  description: Core endpoints — service information and health check.
+- name: Customers
+  description: Customer endpoints — full CRUD for customer profiles.
+- name: Staff
+  description: Staff endpoints — full CRUD for staff profiles (staff access only).

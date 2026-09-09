@@ -1,9 +1,12 @@
+from uuid import UUID
+
 from profiles.validators import validate_alphanumeric, validate_doc
 
 
 class ProfileValidationService:
     @staticmethod
     def validate(
+        user_uuid,
         first_name,
         last_name,
         doc,
@@ -15,6 +18,8 @@ class ProfileValidationService:
         address_number=None,
         address_line_2=None,
     ):
+
+        user_uuid = UUID(str(user_uuid))
         first_name = validate_alphanumeric("first_name", first_name)
         last_name = validate_alphanumeric("last_name", last_name)
         doc = validate_doc(doc)
@@ -29,6 +34,7 @@ class ProfileValidationService:
         country = validate_alphanumeric("country", country).upper()
 
         return {
+            "user_uuid": user_uuid,
             "first_name": first_name,
             "last_name": last_name,
             "doc": doc,

@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.test import TestCase
 
 from profiles.staff.models import Staff
@@ -16,6 +18,7 @@ VALID_STAFF_DATA = {
     "state": "sp",
     "country": "bra",
     "role": "customer services",
+    "user_uuid": uuid4(),
 }
 
 MINIMAL_STAFF_DATA = {
@@ -28,6 +31,7 @@ MINIMAL_STAFF_DATA = {
     "state": "rj",
     "country": "bra",
     "role": "attendant",
+    "user_uuid": uuid4(),
 }
 
 
@@ -75,10 +79,10 @@ class StaffSerializerTestCase(TestCase):
         staff = Staff.objects.create(**MINIMAL_STAFF_DATA)
         serializer = StaffSerializer(instance=staff)
         expected_fields = {
-            "uuid", "first_name", "last_name", "doc",
+            "uuid", "user_uuid", "first_name", "last_name", "doc",
             "address", "address_number", "address_line_2",
             "neighborhood", "city", "state", "country",
-            "created_at", "staff_id", "role",
+            "created_at", "updated_at", "staff_id", "role",
         }
         self.assertEqual(serializer.data.keys(), expected_fields)
 

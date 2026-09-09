@@ -5,6 +5,7 @@ from django.db import models
 
 class Profile(models.Model):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    user_uuid = models.UUIDField(unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     doc = models.CharField(max_length=11, unique=True)
@@ -17,6 +18,7 @@ class Profile(models.Model):
     country = models.CharField(max_length=3)
 
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         abstract = True

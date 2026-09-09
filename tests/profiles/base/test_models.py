@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from django.test import TestCase
+from django.utils import timezone
 
 from profiles.customer.models import Customer
 
@@ -8,6 +9,7 @@ from profiles.customer.models import Customer
 class ProfileModelTestCase(TestCase):
     def _make_customer(self, **overrides):
         fields = {
+            "user_uuid": uuid4(),
             "first_name": "john",
             "last_name": "doe",
             "doc": "12345678901",
@@ -41,3 +43,27 @@ class ProfileModelTestCase(TestCase):
     def test_created_at_is_auto_set(self):
         customer = Customer.objects.create(**self._make_customer(doc="55566677788"))
         self.assertIsNotNone(customer.created_at)
+
+    def test_updated_at_is_auto_set_on_create(self):
+        customer = Customer.objects.create(**self._make_customer(doc="55566677789"))
+        self.assertIsNotNone(customer.updated_at)
+        self.assertIsInstance(customer.updated_at, type(timezone.now()))
+
+    def test_updated_at_changes_on_save(self):
+        customer = Customer.objects.create(**self._make_customer(doc="55566677790"))
+        original_updated = customer.updated_at
+
+        customer.first_name = "jane"
+        customer.save()
+        customer.refresh_from_db()
+
+        self.assertGreater(customer.updated_at, original_updated)
+
+    def test_customer_requires_unique_user_uuid_per_instance(self):
+        first_user_uuid = uuid4()
+        Customer.objects.create(**self._make_customer(doc="11111111111", user_uuid=first_user_uuid))
+
+        with self.assertRaises(Exception) as ctx:
+            Customer.objects.create(**self._make_customer(doc="22222222222", user_uuid=first_user_uuid))
+
+        self.assertIn("UNIQUE", str(ctx.exception))

@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.test import TestCase
 
 from profiles.customer.models import Customer
@@ -15,6 +17,7 @@ VALID_CUSTOMER_DATA = {
     "city": "sao paulo",
     "state": "sp",
     "country": "bra",
+    "user_uuid": uuid4(),
 }
 
 MINIMAL_CUSTOMER_DATA = {
@@ -26,6 +29,7 @@ MINIMAL_CUSTOMER_DATA = {
     "city": "curitiba",
     "state": "pr",
     "country": "bra",
+    "user_uuid": uuid4(),
 }
 
 
@@ -97,9 +101,10 @@ class CustomerSerializerTestCase(TestCase):
         customer = Customer.objects.create(**MINIMAL_CUSTOMER_DATA)
         serializer = CustomerSerializer(instance=customer)
         expected_fields = {
-            "uuid", "first_name", "last_name", "doc",
+            "uuid", "user_uuid", "first_name", "last_name", "doc",
             "address", "address_number", "address_line_2",
-            "neighborhood", "city", "state", "country", "created_at",
+            "neighborhood", "city", "state", "country",
+            "created_at", "updated_at",
         }
         self.assertEqual(serializer.data.keys(), expected_fields)
 
